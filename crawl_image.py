@@ -3,7 +3,7 @@
 """
 ---------------------------
 Copyright (C) 2022
-@Authors: dnnvu.menlo
+@Authors: Vic Dang
 @Date: 22-Mar-22
 @Version: 1.0
 ---------------------------

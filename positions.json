@@ -8,5 +8,7 @@
    "SM": "Senior Manager",
    "D": "Director",
    "E": "Engineer",
-   "SD": "Senior Director"
+   "SD": "Senior Director",
+   "VP": "Vice President",
+   "CEO": "CEO"
 }

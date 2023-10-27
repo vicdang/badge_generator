@@ -265,7 +265,7 @@ class ImageMaker(object):
          wpercent = (basewidth / float(img_w))
          hsize = int((float(img_h) * float(wpercent)))
          self.img_resized = self.img.resize((basewidth, hsize),
-                                            Image.ANTIALIAS)
+                                            Image.LANCZOS)
       else:
          hpercent = (basewidth / float(img_h))
          wsize = int((float(img_w) * float(hpercent)))

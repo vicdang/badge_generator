@@ -2,16 +2,16 @@
 Using to generate and process image
 ## Prerequisites
 - Python >= 3.8
-- CV2
+- CV2 (Opencv-python)
 - Numpy
-- PIL
+- PIL (Pilow)
 - QRCode
 
 ## Structure
 Directory structure is shown below:
 
 ```
-ImageProducer/
+badge_generator/
 .
 |-- Haar\ Cascade
 |   `-- haarcascade_frontalface_default.xml
@@ -56,27 +56,45 @@ ImageProducer/
     `-- owncloud.py
 
 ```
-## Steps
-### Install python
+## Preparation
+[Badge Generator](https://github.com/vicdang/badge_generator.git)
+```
+# Install python
  - Install python >= 3.8
 
-### Install required packages
- - pip3 install -r requirements.ini
+# clone repo
+$ git clone https://github.com/vicdang/badge_generator.git
+$ cd badge_generator
+ 
+# create virtual envirnoment and activate it
+$ python -m venv --prompt badge_gernator .venv
+$ source .venv/Scripts/activate
 
-### Execute command
+# install python requirements
+$ pip install -r requirements.txt
+```
+## Procedure
+1. Design your template and place it in `badge_generator/img/template/` follow format [Template](img/template/README.md)
+> - Eg: template.png
+2. Place your images in `badge_generator/img/src_img/` follow format [src_img](img/src_img/README.md)
+3. Execute commands
+4. Get output in `badge_generator/img/des_img/` follow format [des_img](img/des_img/README.md)
+---
+# Execute command
 ```
 # For quick start
 Execute "run.pyw" (doubeclick or run by cmd)
 
 # For quick start with GUI
 $ python execute_gui.py
-```
+
 Optional : 
  - Modify configuration
  - click save for the next execution
  - And/Or click execute
 ```
 # For general help
+```
 $ python execute.py --help
 usage: execute.py [-h] [-d] [--test] [-v] {exec} ...
 
@@ -93,8 +111,10 @@ optional arguments:
   -d, --debug
   --test
   -v, --verbose
+```
 
 # For sub command help
+```
 $ python execute.py exec --help
 usage: execute.py exec [-h] [-c] [--check-path] [-s SRC_PATH] [-f DES_PATH]
                        [-t TEMPLATE] [-q QR_TEXT] [-a] [-l LOOP] [-i INTERVAL]
@@ -124,3 +144,11 @@ python execute.py exec
 python execute.py -d exec
 python execute.py -d -v exec
 ```
+
+---
+# Others
+## Make some cheers
+I was not expecting that, but you can send a beer via 
+> PayPal: [@vicdane](https://paypal.me/vicdane)
+### Can I pay for a feature or support
+Reach me out on my mail (git log is your friend), and we can discuss.
