@@ -125,7 +125,7 @@ class MainWindow(tk.Frame):
                                                        v in self.dict_val.items()]))
       self.save_config()
       self.plogger.insert("Processing ...")
-      process = subprocess.Popen('python execute.py exec -c',
+      process = subprocess.Popen('runner.bat',
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT,
                                  shell=True)
@@ -328,7 +328,7 @@ def main():
    """
    root = tk.Tk()
    # root.geometry("%dx%d" % (WIDTH, HEIGHT))
-   root.resizable(0, 0)
+   root.resizable(height = 500, width = 300)
    app = MainWindow(root, get_config())
    root.mainloop()
 
