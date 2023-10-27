@@ -18,6 +18,7 @@ badge_generator/
 |-- README.md                -> Should read first
 |-- config.ini
 |-- config_base.ini          -> Base config for the GUI
+|-- crawl_image.py           -> Use for crawling images from HR tool
 |-- execute.py               -> Main CLI app
 |-- execute_gui.py           -> Main GUI app
 |-- fonts
