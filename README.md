@@ -15,43 +15,33 @@ badge_generator/
 .
 |-- Haar\ Cascade
 |   `-- haarcascade_frontalface_default.xml
-|-- README.md
+|-- README.md                -> Should read first
 |-- config.ini
-|-- config_base.ini
-|-- execute.py
-|-- execute_gui.py
+|-- config_base.ini          -> Base config for the GUI
+|-- execute.py               -> Main CLI app
+|-- execute_gui.py           -> Main GUI app
 |-- fonts
 |   |-- ARIALN.TTF
-|   |-- ARIALNB.TTF
-|   |-- ARIALNBI.TTF
-|   |-- ARIALNI.TTF
-|   |-- arial.ttf
-|   |-- arialbd.ttf
-|   |-- arialbi.ttf
-|   |-- ariali.ttf
-|   |-- ariblk.ttf
-|   |-- calibri.ttf
-|   |-- calibrib.ttf
-|   |-- calibrii.ttf
-|   |-- calibril.ttf
-|   |-- calibrili.ttf
-|   `-- calibriz.ttf
-|-- img
-|   |-- cv_img
-|   |   `-- doc.txt
-|   |-- des_img
-|   |   `-- info.txt
-|   |-- src_img
-|   |   `-- doc.txt
-|   |-- template
+|   |-- ...
+|-- img                      -> Your images here
+|   |-- cv_img               -> User for image convertion (optional)
+|   |   `-- README.md
+|   |-- des_img              -> Output here
+|   |   `-- README.md
+|   |-- src_img              -> Input here
+|   |   `-- README.md
+|   |-- template             -> Base template
+|   |   `-- README.md
 |   |   `-- template.png
-|   `-- tmp_img
-|       `-- doc.txt
-|-- pictool.conf
-|-- pictool.log
-|-- requirements.ini
+|   `-- tmp_img              -> User for debug face detection
+|       `-- README.md
+|-- pictool.conf             -> Root config
+|-- pictool.log              -> Root log
+|-- requirements.txt
+|-- positions.json           -> Positions register
 |-- run.bat
-`-- test_gui
+|-- run.pyw                  -> Executor
+`-- test_gui                 -> For Owncloud feature support
     |-- config_base.ini
     `-- owncloud.py
 
