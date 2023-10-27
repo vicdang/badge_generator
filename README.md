@@ -1,13 +1,24 @@
-# Image Producer
+# ***Image Producer***
 Using to generate and process image
-## Prerequisites
+## ***General Information***
+### Supporting Features
+1. Auto detect faces, resize, rotate, crop and convert image
+2. Collage images and template
+3. Placing text on manipulated image
+4. Generate QR code base on image data
+5. Support Windows and Unix
+
+### Future Features
+1. Integrate with storage tools like Ownloud, Drive, GGPhoto, Flickr...
+2. Auto crawling required images, icon, emoticons
+### Prerequisites
 - Python >= 3.8
 - CV2 (Opencv-python)
 - Numpy
 - PIL (Pilow)
 - QRCode
 
-## Structure
+## ***Structure***
 Directory structure is shown below:
 
 ```
@@ -47,8 +58,8 @@ badge_generator/
     `-- owncloud.py
 
 ```
-## Preparation
-[Badge Generator](https://github.com/vicdang/badge_generator.git)
+## ***Preparation***
+> [Badge Generator](https://github.com/vicdang/badge_generator.git)
 ```
 # Install python
  - Install python >= 3.8
@@ -64,14 +75,14 @@ $ source .venv/Scripts/activate
 # install python requirements
 $ pip install -r requirements.txt
 ```
-## Procedure
+## ***Procedure***
 1. Design your template and place it in `badge_generator/img/template/` follow format [Template](img/template/README.md)
 > - Eg: template.png
 2. Place your images in `badge_generator/img/src_img/` follow format [src_img](img/src_img/README.md)
 3. Execute commands
 4. Get output in `badge_generator/img/des_img/` follow format [des_img](img/des_img/README.md)
 ---
-# Execute command
+## ***Execute Command Line***
 ```
 # For quick start
 Execute "run.pyw" (doubeclick or run by cmd)
@@ -84,7 +95,7 @@ Optional :
  - click save for the next execution
  - And/Or click execute
 ```
-# For general help
+## ***For General Help***
 ```
 $ python execute.py --help
 usage: execute.py [-h] [-d] [--test] [-v] {exec} ...
@@ -104,7 +115,7 @@ optional arguments:
   -v, --verbose
 ```
 
-# For sub command help
+## ***For Sub Command Help***
 ```
 $ python execute.py exec --help
 usage: execute.py exec [-h] [-c] [--check-path] [-s SRC_PATH] [-f DES_PATH]
@@ -137,9 +148,9 @@ python execute.py -d -v exec
 ```
 
 ---
-# Others
-## Make some cheers
+# ***Others***
+## ***Make Some Cheers***
 I was not expecting that, but you can send a beer via 
 > PayPal: [@vicdane](https://paypal.me/vicdane)
-### Can I pay for a feature or support
+## Can I request for a feature or support
 Reach me out on my mail (git log is your friend), and we can discuss.
