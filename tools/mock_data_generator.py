@@ -17,10 +17,11 @@ import random
 import argparse
 import logging
 
+
 class ImageNameVerifier:
     """Class to verify and generate mock data for image names."""
 
-    def __init__(self, folder_path, log_file):
+    def __init__(self, args):
         """Initialize ImageNameVerifier instance.
 
         :param folder_path: Path to the folder for mock data.
@@ -28,36 +29,65 @@ class ImageNameVerifier:
         :param log_file: Path to the log file.
         :type log_file: str
         """
-        self.folder_path = folder_path
-        self.log_file = log_file
+        self.folder_path = args.folder_path
+        self.log_file = args.log_file
         self.logger = self.setup_logger()
 
     def setup_logger(self):
-        """Set up logger for ImageNameVerifier.
+        """
+        Sets up logging configuration.
 
-        :return: Logger instance
-        :rtype: logging.Logger
+        Returns
+        -------
+        logging.Logger
+            Configured logger instance.
         """
         logger = logging.getLogger('image_name_verification')
         logger.setLevel(logging.INFO)
 
-        file_handler = logging.FileHandler(self.log_file)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s')
+
+        # File handler
+        file_handler = logging.FileHandler(
+            self.log_file, encoding='utf-8')  # Specify encoding
         file_handler.setLevel(logging.INFO)
-
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(formatter)
-
         logger.addHandler(file_handler)
 
+        # Stream handler for terminal logging
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+
         return logger
-    
+
     def cleanup_folder(self):
         """Clean up mock images folder."""
         mock_folder = os.path.join(self.folder_path, 'mock_images')
+        self.logger.info(f"Mock folder: {mock_folder}")
         if os.path.exists(mock_folder):
             for filename in os.listdir(mock_folder):
                 file_path = os.path.join(mock_folder, filename)
+                self.logger.info(f"Removed file: {filename}")
                 os.remove(file_path)
+
+    def get_fullname(self, gender=True):
+        if gender:
+            first_name = ["Hồng", "Đức", "Quốc", "Hoàng", "Hải", "Công", "Minh", "Thành", "Thuận", "Đông", "Tuấn", "Nhân", "Trung", "Sơn",
+                           "Duy", "Hùng", "Long", "Tiến", "Vũ", "Bình", "Loan", "Huy", "Phúc", "Đạt", "Trọng", "Gia", "Linh", "An", "Vinh", "Đại", "Khánh"]
+            mid_name = ["Văn", "Hữu", "Đức", "Minh", "Thành", "Nhật", "Đình", "An", "Gia", "Trọng", "Quang", "Hồng", "Nhân",
+                         "Sơn", "Hải", "Hoàng", "Duy", "Quốc", "Trung", "Tuấn", "Nhật", "Hưng", "Tiến", "Bảo", "Đại", "Ngọc", "Phúc", "Nam"]
+        else:
+            first_name = ["Mai", "Thị", "Như", "Thủy", "Phương", "Quỳnh", "Trang", "Ngọc", "Thanh", "Hạnh", "Nga", "Lan",
+                             "Thu", "Hoa", "Nguyệt", "Nhật", "Hằng", "Thuỳ", "Tâm", "Anh", "Hương", "Vân", "Trà", "Dung", "Tú", "Loan", "Ngân", "Ánh"]
+            mid_name = ["Thị", "Ngọc", "Hồng", "Thu", "Hạnh", "Mai", "Loan", "Linh", "Phương", "Quỳnh", "Trang",
+                           "Vân", "Hương", "Tú", "Ánh", "Diễm", "Yến", "Ly", "Kiều", "Trâm", "Nga", "Thúy", "Thủy", "Thảo", "Dung", "Tâm"]
+        last_name = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý", "Đào", "Mai", "Tạ", "Trương", "Đinh", "Phùng", "Lâm", "Tô", "Tăng", "Bành",
+                     "Đoàn", "Ân", "Thái", "Thiều", "Hoa", "Tôn", "Nghiêm", "Quách", "Đổng", "Lục", "Bạch", "Ninh", "Du", "Sử", "Phi", "La", "Viên", "Vương", "Khuất", "Lương", "Đoàn", "Từ", "Tiêu", "Tiết", "Thi", "Đồng", "Chu", "Từ"]
+        return ' '.join([random.choice(last_name), ' '.join([(random.choice(mid_name)) for _ in range(random.randint(1, 2))]),
+                    random.choice(first_name)])
 
     def generate_mock_data(self, num_images):
         """Generate mock data for image names.
@@ -66,24 +96,22 @@ class ImageNameVerifier:
         :type num_images: int
         """
         # Sample data for mock generation
-        first_name = ['Huy', 'Linh', 'Minh', 'An', 'Tú', 'Phương', 'Nam', 'Hạnh', 'Dũng', 'Thảo', 'Quân', 'Hoàng', 'Thị', 'Hồng', 'Tuấn', 'Lan', 'Thắng', 'Thu', 'Đức', 'Mai', 'Cường', 'Thành', 'Ngọc', 'Vân', 'Sơn', 'Nguyệt', 'Hải', 'Trang', 'Phúc', 'Lệ', 'Đạt', 'Thuận', 'Thơ', 'Tâm', 'Hoa', 'Đông', 'Tùng', 'Hằng', 'Quang', 'Trâm', 'Danh', 'Linh', 'Nhân', 'Bình', 'Thư', 'Tân', 'Yến', 'Dương', 'Việt', 'Thảnh', 'Giang', 'Tâm', 'Thùy', 'Thắm', 'Hùng', 'Diễm', 'Thơm', 'Tín', 'Như', 'Đan', 'Phong', 'Thịnh', 'Nhật', 'Hạ', 'Thanh', 'Thảo', 'Phú', 'Hiền', 'Nhàn', 'Tâm', 'Khoa', 'Quỳnh', 'Lâm', 'Nguyên', 'Hà', 'Hải', 'Thủy', 'Tân', 'Cát', 'Chí', 'Trúc', 'Vinh', 'Phương', 'Nga', 'Ninh', 'Châu', 'Hiệp', 'Thuý', 'Lan', 'Khánh', 'Tuấn', 'Thanh', 'Thảo', 'Hương', 'Nga', 'Nhị', 'Thắm', 'Lợi', 'Bảo', 'Phương', 'Châu', 'Tài', 'Lễ', 'Lý', 'Ngọc', 'Thanh', 'Trúc', 'Tâm', 'Đức', 'Phượng', 'Thanh', 'Hà', 'Thư', 'Thi', 'Khuê', 'Hiếu', 'Thiện', 'Trúc', 'Nhi', 'Duy', 'Trinh', 'Nguyên', 'Vinh', 'Nhật', 'Thiện', 'Tài', 'Lợi', 'Huyền', 'Nga', 'Tùng', 'Hà', 'Văn', 'Hương', 'Nhiên', 'Nhật', 'Tín', 'Ngọc', 'Trang', 'Nhân', 'Dương', 'Thu', 'Thanh', 'Tú', 'Thịnh', 'Nhã', 'Anh', 'Định', 'Nhật', 'Thịnh', 'Thắng', 'Thành', 'Đức', 'Tín', 'Bảo', 'Đạt', 'Hoa', 'Vân', 'An', 'Tuấn', 'Trường', 'Nga', 'Hạnh', 'Thi', 'Hiền', 'Tâm', 'Thúy', 'Nhân', 'Tùng', 'Ngọc', 'Tú', 'Thiện', 'Hoài', 'Châu', 'Quỳnh', 'Quốc', 'Trúc', 'Thanh', 'Hồng', 'Nga', 'Vân', 'Nhật', 'Hải', 'Nhi', 'Nhã', 'Trúc', 'Bích', 'Thu', 'Thảo', 'Bình', 'Hà', 'Quân', 'Dung', 'Nhàn', 'Dũng', 'Nhật', 'Tâm', 'Đình', 'Thiện', 'Huyền', 'Hiếu', 'Hồng', 'Thắm', 'Hương', 'Trang', 'Hạnh', 'Ninh', 'Hoa', 'Hậu', 'Trang', 'Thảo', 'Nhã', 'Hà', 'Minh', 'Quang', 'Nhật', 'Trúc', 'Thanh', 'Hoài', 'Vân', 'Hiền', 'Thị', 'Nga', 'Thắng', 'Tuấn', 'Thi', 'Anh', 'Hạnh', 'Thảo', 'An', 'Thu', 'Tâm', 'Hiếu', 'Nhật', 'Phương', 'Thuận', 'Hương', 'Thiện', 'Nhã', 'Nhi', 'Trúc', 'Đức', 'Nhật', 'Vinh', 'Lan', 'Thành', 'Nhiên', 'Thúy', 'Như', 'Đức', 'Nhân', 'Huyền', 'Vân', 'Phúc', 'Hải', 'Ngọc', 'Như', 'Hoa', 'Nhật', 'Trúc', 'Nhi', 'Thi', 'Hiền', 'Dung', 'Thiện', 'Hạnh', 'Nhi', 'Linh', 'Hiếu', 'Thảo', 'Hồng', 'Nhật', 'Thúy', 'Thi', 'Đình', 'Hoài', 'Hiếu', 'Nhật', 'Thi', 'Vân', 'Thắm', 'Nhật', 'Vân', 'Đức', 'Anh', 'Phúc', 'Nhật', 'Hạnh', 'Minh', 'Vân', 'Duy', 'Thành', 'Vinh', 'Hiếu', 'Thảo', 'Quang', 'Hà', 'An', 'Hạnh', 'Bình', 'Hồng', 'Đức', 'Linh', 'Lam', 'Thi', 'Thắm', 'Duy', 'Tâm', 'Đình', 'Như', 'Hạnh', 'Thi', 'Hương', 'Nhi', 'Đức', 'Huyền', 'Nhi', 'Trang', 'Minh', 'Tâm', 'Đức', 'Thiện', 'Vân', 'Phương', 'Nga', 'Thiện', 'Hiếu', 'Tâm', 'Thủy', 'Đức', 'Hải', 'Nhật', 'Hiếu', 'Như', 'Trang', 'Hiếu', 'Tâm', 'Nhi', 'Như', 'Hải', 'Tùng', 'Vân', 'An', 'Hương', 'Nhân', 'Đức', 'Hiếu']
-        mid_name = ['Thị', 'Văn', 'Như', 'Ngọc', 'Minh', 'Hữu', 'Tuấn', 'Thành', 'Kim', 'Quốc', 'Hồng', 'Đức', 'Công', 'Thái', 'Anh', 'Thế', 'Hải', 'Quang', 'Đình', 'Hạnh', 'Trung', 'Thiện', 'Hoàng', 'Tâm', 'Nhật', 'Thư', 'Vinh', 'Trần', 'Lâm', 'Phương', 'Hoài', 'Lệ', 'Hoa', 'Huy', 'Trí', 'Nga', 'Hương', 'Linh', 'Phúc', 'Duy', 'Tuyết', 'Nhi', 'Sơn', 'Hà', 'Lan', 'Bình', 'Mai', 'Tú', 'Gia', 'Thắng', 'Tùng', 'Phong', 'Thảo', 'Nhàn', 'Dung', 'Nhân', 'Đông', 'Tình', 'Đức', 'Tài', 'Thái', 'Đức', 'Bảo', 'Nguyên', 'Đan', 'Thuận', 'Thành', 'Thắng', 'Bích', 'Thảnh', 'Vinh', 'Phước', 'Cường', 'Việt', 'Thủy', 'Quân', 'Như', 'Hân', 'Lương', 'Khánh', 'Nghĩa', 'Hòa', 'Phát', 'Vân', 'Ninh', 'Thu', 'Phụng', 'Hải', 'Dương', 'Nhã', 'Hoàng', 'Khoa', 'Lan', 'Tài', 'Chí', 'Nguyệt', 'Nhật', 'Tín', 'Tấn', 'Hiếu', 'Thắng', 'Đức', 'Thuỳ', 'Nhung', 'Thịnh', 'Nhãn', 'Hữu', 'Thành', 'Giang', 'Tân', 'Nhung', 'Hà', 'Trang', 'Hải', 'An', 'Trọng', 'Hòa', 'Nhật', 'Lam', 'Hậu', 'Như', 'Nghĩa', 'Hải', 'Đăng', 'Hiệp', 'Thành', 'Nhàn', 'Hà', 'Phong', 'Đông', 'Thùy', 'Thu', 'Hải', 'Như', 'Nghĩa', 'Hiếu', 'Như', 'Hạnh', 'Thanh', 'Hòa', 'Hoàng', 'Nhật', 'Nghĩa', 'Lâm', 'Nhàn', 'Hồng', 'Trung', 'Đan', 'Bảo', 'Thành', 'Hải', 'Thiên', 'Quang', 'Như', 'Hoa', 'Hồng', 'Thu', 'Nghiêm', 'Nhân', 'Phụng', 'Nhãn', 'Hải', 'Hiền', 'Đức', 'Nhã', 'Hà', 'Nhất', 'Quỳnh', 'Đức', 'Lưu', 'Duy', 'Dung', 'Hồng', 'Thi', 'Hải', 'Hân', 'Nhã', 'Hòa', 'Thiện', 'Lưu', 'Hoàng', 'Bảo', 'Hải', 'Chính', 'Hoa', 'Quân', 'Thế', 'Nhi', 'Nhàn', 'Trang', 'Hải', 'Nhật', 'Trọng', 'Như', 'Phúc', 'Thái', 'Hương', 'Vũ', 'Thịnh', 'Hiếu', 'Linh', 'Nhã', 'Hương', 'Nga', 'Hạnh', 'Phong', 'Hải', 'Đức', 'Phước', 'Nhã', 'Thanh', 'Nhật', 'Hà', 'Như', 'Hải', 'Huyền', 'Thi', 'Thanh', 'Trang', 'Như', 'Hạnh', 'Thanh', 'Hương', 'Hoàng', 'Tùng', 'Như', 'Trang', 'Hoa', 'Như', 'Thiện', 'Hải', 'Trang', 'Hải', 'Nhã', 'Tâm', 'Thanh', 'Hương', 'Bảo', 'Phúc', 'Thiện', 'Nhi', 'Đức', 'Nghĩa', 'Nhãn', 'Bích', 'Như', 'Hòa', 'Nhã', 'Nghĩa', 'Hải', 'Thái', 'Như', 'Tân', 'Hồng', 'Nhã', 'Hồng', 'Thu', 'Hà', 'Hiếu', 'Nghĩa', 'Quang', 'Dương', 'Nhật', 'Văn', 'Như', 'Nhẫn', 'Nhật', 'Nhi', 'Nhật', 'Hải', 'Hoàng', 'Như', 'Nghĩa', 'Hòa', 'Hải', 'Hải', 'Như', 'Nhất', 'Nhã', 'Phúc', 'Thanh', 'Hòa', 'Hà', 'Hoa', 'Nghiêm', 'Thịnh', 'Tâm', 'Nhật', 'Tâm', 'Linh', 'Hoàng', 'Nhã', 'Trang', 'Nhật', 'Hồng', 'Hà', 'Hải', 'Hiền', 'Nhi', 'Hà', 'Hiền', 'Nghiêm', 'Huyền', 'Thanh', 'Thịnh', 'Nhật', 'Nghiêm', 'Thanh', 'Trang', 'Như', 'Hạnh', 'Nhã', 'Hoàng', 'Huyền', 'Thịnh', 'Hồng', 'Phúc', 'Nhã', 'Như', 'Hải', 'Nhã', 'Nghiêm', 'Hồng', 'Quang', 'Thành', 'Hoài', 'Nhã', 'Huyền', 'Phương', 'Thái', 'Như', 'Hải', 'Trang', 'Như', 'Nghiêm', 'Thịnh', 'Hồng', 'Hải', 'Nhật', 'Hồng']
-        last_name = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý', 'Trịnh', 'Đinh', 'Phùng', 'Đoàn', 'Bạch', 'Hà', 'Tạ', 'Tô', 'Lương', 'Kiều', 'Mai', 'Tăng', 'Sơn', 'Giang', 'Chu', 'Âu', 'Thái', 'Từ', 'Tiêu', 'Nghiêm', 'Lục', 'Tôn', 'Mạc', 'Lỗ', 'Triệu', 'Điền', 'Nghị', 'Đồng', 'Nữ', 'Thi', 'Lục', 'Cao', 'Viên', 'Chung', 'Đường', 'Tiết', 'Thủy', 'Lưu', 'Tưởng', 'Kha', 'Châu', 'Đoàn', 'Trang', 'Diệp', 'Hứa', 'Trương', 'Doãn', 'Lư', 'Tòng', 'Lục', 'Lâm', 'Lư', 'Kiều', 'Lục', 'Ngưu', 'Chu', 'Quách', 'Phó', 'Vương', 'Dương']
-        positions = ['E', 'SE', 'TL', 'PM', 'SM', 'ASM', 'SME', 'A', 'SA', 'D', 'SD', 'VP']
+        positions = ['E', 'SE', 'TL', 'PM', 'SM',
+                     'ASM', 'SME', 'A', 'SA', 'D', 'SD', 'VP']
         formats = ['png', 'jpg', 'bmp', 'jpeg']
         prefixes = ['', 'T', 'B']
 
         # Generate mock image names
         for _ in range(num_images):
-            vietnamese_name = ' '.join([random.choice(last_name),
-                                       random.choice(mid_name),
-                                       random.choice(first_name)])
-            ID = random.choice(prefixes) + ''.join([str(random.randint(0, 9)) for _ in range(6)])
+            vietnamese_name = self.get_fullname(random.choice([True, False]))
+            ID = random.choice(
+                prefixes) + ''.join([str(random.randint(0, 9)) for _ in range(6)])
             position = random.choice(positions)
             number = random.randint(1, 3)
             image_format = random.choice(formats)
 
             image_name = f"{vietnamese_name}_{ID}_{position}_{number}.{image_format}"
+            self.logger.info(f"Image: {image_name}")
             yield image_name
 
     def create_mock_images(self, num_images):
@@ -99,30 +127,40 @@ class ImageNameVerifier:
             with open(os.path.join(mock_folder, f"{image_name}"), 'w') as file:
                 file.write("Mock image content.")
 
+
 def parse_arguments():
     """Parse command line arguments using argparse.
 
     :return: Parsed arguments.
     :rtype: argparse.Namespace
     """
-    parser = argparse.ArgumentParser(description='Generate mock data for ImageNameVerifier testing.')
-    parser.add_argument('-f', '--folder-path', type=str, default="./", nargs='?', help='Path to the folder to create mock data')
-    parser.add_argument('-l', '--log-file', type=str, default="./log.log", nargs='?', help='Path to the log file')
-    parser.add_argument('-n', '--num-images', type=int, default=10, nargs='?', help='Number of mock images to generate')
-    parser.add_argument('-c', '--cleanup', action='store_false', default=True, help='Do not cleanup the "mock_images" folder before generating new data')
+    parser = argparse.ArgumentParser(
+        description='Generate mock data for ImageNameVerifier testing.')
+    parser.add_argument('-f', '--folder-path', type=str, default="./",
+                        nargs='?', help='Path to the folder to create mock data')
+    parser.add_argument('-l', '--log-file', type=str,
+                        default="./log.log", nargs='?', help='Path to the log file')
+    parser.add_argument('-n', '--num-images', type=int, default=10,
+                        nargs='?', help='Number of mock images to generate')
+    parser.add_argument('-c', '--cleanup', action='store_true', default=True,
+                        help='Do not cleanup the "mock_images" folder before generating new data')
     return parser.parse_args()
+
 
 def main():
     """Execute the script to generate mock data."""
     args = parse_arguments()
-    verifier = ImageNameVerifier(args.folder_path, args.log_file)
+    verifier = ImageNameVerifier(args)
     verifier.cleanup = args.cleanup
 
     num_images = args.num_images
     if num_images < 0:
         num_images = 0
 
+    if args.cleanup:
+        verifier.cleanup_folder()
     verifier.create_mock_images(num_images)
+
 
 if __name__ == "__main__":
     main()
