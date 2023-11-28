@@ -24,7 +24,7 @@ import subprocess
 from threading import *
 
 TITLE = "Image Producer"
-CONF = './config.ini'
+CONF = './config/config.ini'
 SEED = 3
 HEIGHT = 500
 WIDTH = 800

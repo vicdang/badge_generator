@@ -27,6 +27,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger()
 CUR_PATH = pathlib.Path().resolve()
+CONF = './config/'
 config = None
 
 class ImageSizeException(Exception):
@@ -49,7 +50,7 @@ class Utility(object):
       # instantiate
       config = ConfigParser()
       # parse existing file
-      config.read('./config.ini')
+      config.read(CONF + 'config.ini')
       return config
 
    @staticmethod
@@ -149,7 +150,7 @@ class ImageMaker(object):
       self.tpl_h = conf.getint("template", "height")
       self.conf = conf
       self.base_text_size = self.conf.getint("general", "basetextsize")
-      with open("positions.json", "r") as pos_file:
+      with open(CONF + "positions.json", "r") as pos_file:
          self.positions = json.load(pos_file)
       self.re_name = "^[\w\.\- ]+$"
       self.re_id = "^[\w]?[\d]+$"

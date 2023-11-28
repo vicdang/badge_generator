@@ -123,7 +123,7 @@ class ImageNameVerifier:
         mock_folder = os.path.join(self.folder_path, 'mock_images')
         os.makedirs(mock_folder, exist_ok=True)
 
-        for idx, image_name in enumerate(self.generate_mock_data(num_images), start=1):
+        for image_name in self.generate_mock_data(num_images):
             with open(os.path.join(mock_folder, f"{image_name}"), 'w') as file:
                 file.write("Mock image content.")
 
