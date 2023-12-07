@@ -9,13 +9,12 @@
 
 import argparse
 import glob
-import json
 import logging.config
 import os
-import re
-import time
 import pathlib
+import re
 import sys
+import time
 import unicodedata
 from argparse import ArgumentDefaultsHelpFormatter as Formatter
 
@@ -24,19 +23,23 @@ import numpy as np
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 
+from tools.util import Utilities as uT
 
 logger = logging.getLogger()
 CUR_PATH = pathlib.Path().resolve()
 CONF = './config/'
 config = None
 
+
 class ImageSizeException(Exception):
    """ImageSizeException"""
    pass
 
+
 class UserInfoException(Exception):
    """UserInfoException"""
    pass
+
 
 class Utility(object):
    """docstring for Utility"""
@@ -48,10 +51,10 @@ class Utility(object):
       except ImportError:
          from ConfigParser import ConfigParser  # ver. < 3.0
       # instantiate
-      config = ConfigParser()
+      conf = ConfigParser()
       # parse existing file
-      config.read(CONF + 'config.ini')
-      return config
+      conf.read(CONF + 'config.ini')
+      return conf
 
    @staticmethod
    def validate(string, regex):
@@ -83,11 +86,11 @@ class Utility(object):
       Used to countdown when processing
       :param due_time: due time
       """
-      logger.debug("Couting down for %s" % due_time)
+      logger.debug("Counting down for %s" % due_time)
       while due_time:
-         mins, secs = divmod(due_time, 60)
-         timeformat = '{:02d}:{:02d}'.format(mins, secs)
-         print(timeformat, end='\r')
+         minute, second = divmod(due_time, 60)
+         time_format = '{:02d}:{:02d}'.format(minute, second)
+         print(time_format, end='\r')
          time.sleep(1)
          due_time -= 1
 
@@ -108,10 +111,10 @@ class Utility(object):
                os.remove(f)
 
    @staticmethod
-   def ResizeWithAspectRatio(image, width=None, height=None,
-                             inter=cv2.INTER_AREA):
+   def resize_with_aspect_ratio(image, width=None, height=None,
+                                inter=cv2.INTER_AREA):
       """
-      ResizeWithAspectRatio
+      resize_with_aspect_ratio
       :param image:
       :param width:
       :param height:
@@ -130,8 +133,10 @@ class Utility(object):
 
       return cv2.resize(image, dim, interpolation=inter)
 
+
 class ImageMaker(object):
    """docstring for ImageMaker"""
+
    def __init__(self, name, arg, conf):
       super(ImageMaker, self).__init__()
       self.arg = arg
@@ -142,20 +147,19 @@ class ImageMaker(object):
       self.template = os.path.join(CUR_PATH, arg.template)
       self.debug = arg.debug or False
       self.img_prefix = conf.get("general", "imgprefix")
-      self.tpl_avata_x = conf.getint("template", "avatax")
-      self.tpl_avata_y = conf.getint("template", "avatay")
-      self.tpl_avata_w = conf.getint("template", "avataw")
-      self.tpl_avata_h = conf.getint("template", "avatah")
+      self.tpl_avatar_x = conf.getint("template", "avatax")
+      self.tpl_avatar_y = conf.getint("template", "avatay")
+      self.tpl_avatar_w = conf.getint("template", "avataw")
+      self.tpl_avatar_h = conf.getint("template", "avatah")
       self.tpl_w = conf.getint("template", "width")
       self.tpl_h = conf.getint("template", "height")
       self.conf = conf
       self.base_text_size = self.conf.getint("general", "basetextsize")
-      with open(CONF + "positions.json", "r") as pos_file:
-         self.positions = json.load(pos_file)
+      self.positions = uT.get_dict_positions()
       self.re_name = "^[\w\.\- ]+$"
       self.re_id = "^[\w]?[\d]+$"
 
-      self.img = self.img_resized = self.img_cropt = self.bg_img = None
+      self.img = self.img_resized = self.img_cropped = self.bg_img = None
       self.user_pos = self.positions["E"]
       self.user_name = self.user_id = ""
       self.img_num = 1
@@ -173,7 +177,7 @@ class ImageMaker(object):
       faces = face_cascade.detectMultiScale(gray_image,
                                             # scaleFactor=1.2,
                                             scaleFactor=self.conf.getfloat(
-                                                      "avata", "scalefactor"),
+                                                  "avata", "scalefactor"),
                                             minNeighbors=3,
                                             minSize=(30, 30),
                                             maxSize=(200, 200),
@@ -201,7 +205,7 @@ class ImageMaker(object):
                cv2.rectangle(image, (i, j), (i + w, j + h), (0, 200, 100), 2)
                cv2.rectangle(image, (x, y), (x + 2, y + 2), (0, 255, 255), 2)
       if self.debug:
-         resize = Utility.ResizeWithAspectRatio(image, height=1024)
+         resize = Utility.resize_with_aspect_ratio(image, height=1024)
          cv2.imshow("Faces found", resize)
          cv2.imwrite(self.tmp_path + "faces_" + str(self.name),
                      image)
@@ -218,7 +222,7 @@ class ImageMaker(object):
       :param des_path: Desination path
       """
       files = []
-      format_list = ['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG']
+      format_list = uT.get_list_file_extensions()
       logger.debug(os.listdir(src_path))
       f = [fi for fi in os.listdir(src_path) if os.path.isfile(src_path + fi)]
       logger.debug("File List : %s" % [item for item in f])
@@ -244,11 +248,11 @@ class ImageMaker(object):
          if exif:
             exif = dict(exif.items())
             if exif[orientation] == 3:
-              self.img.rotate(180, expand=True)
+               self.img.rotate(180, expand=True)
             elif exif[orientation] == 6:
-              self.img.rotate(270, expand=True)
+               self.img.rotate(270, expand=True)
             elif exif[orientation] == 8:
-              self.img.rotate(90, expand=True)
+               self.img.rotate(90, expand=True)
       except Exception as err:
          logger.error(err)
          # There is AttributeError: _getexif sometimes.
@@ -261,7 +265,7 @@ class ImageMaker(object):
       """
       img_w, img_h = self.img.size
       logger.info("Width: %f, Height: %f" % (img_w, img_h))
-      basewidth = self.tpl_avata_w + self.conf.getint("template", "padding")
+      basewidth = self.tpl_avatar_w + self.conf.getint("template", "padding")
       if img_h >= img_w:
          wpercent = (basewidth / float(img_w))
          hsize = int((float(img_h) * float(wpercent)))
@@ -272,7 +276,8 @@ class ImageMaker(object):
          wsize = int((float(img_w) * float(hpercent)))
          self.img_resized = self.img.resize((wsize, basewidth),
                                             Image.ANTIALIAS)
-      # cropped_example = cropped_example.resize((basewidth,hsize), Image.ANTIALIAS)
+      # cropped_example = cropped_example.resize((basewidth,hsize),
+      # Image.ANTIALIAS)
       logger.debug("Resized image: %f x %f" % self.img_resized.size)
       self.img_resized.save(self.tmp_path + self.name, format="png")
 
@@ -280,12 +285,12 @@ class ImageMaker(object):
       """
       Crop image
       """
-      basewidth = self.tpl_avata_w + self.conf.getint("template", "padding")
+      basewidth = self.tpl_avatar_w + self.conf.getint("template", "padding")
       x, y = self.get_focus_position(self.tmp_path + self.name)
       img_r_w, img_r_h = self.img_resized.size
       if img_r_w < basewidth or img_r_h < basewidth:
          raise ImageSizeException("Image is too small, Please try another.")
-      base_w = basewidth/2
+      base_w = basewidth / 2
       if x <= 0 and y <= 0:
          x = int(img_r_w / 2)
          y = int(img_r_h / 2)
@@ -300,17 +305,17 @@ class ImageMaker(object):
             y = base_w
       correct_x, correct_y = x - base_w, y - base_w
       correct_w, correct_h = basewidth + correct_x, basewidth + correct_y
-      logger.debug("\nx:{}, y:{}\nc_x:{}, c_y:{}\nw:{}, h:{}".format(
+      logger.debug("[x:{}, y:{}] - [c_x:{}, c_y:{}] - [w:{}, h:{}]".format(
             x, y, correct_x, correct_y, basewidth, basewidth))
       draw = ImageDraw.Draw(self.img_resized)
       if self.debug:
          draw.rectangle([correct_x, correct_y, correct_w, correct_h], width=3,
                         outline="#0000ff")
-      self.img_cropt = self.img_resized.crop((correct_x, correct_y,
-                                              correct_w, correct_h))
-      logger.debug("Cropt image: %f x %f" % self.img_cropt.size)
+      self.img_cropped = self.img_resized.crop((correct_x, correct_y,
+                                                correct_w, correct_h))
+      logger.debug("Cropped image: %f x %f" % self.img_cropped.size)
       if self.arg.debug or self.arg.test:
-         self.img_cropt.save(self.tmp_path + "cr_" + self.name, format="png")
+         self.img_cropped.save(self.tmp_path + "cr_" + self.name, format="png")
 
    def parse_user_info(self):
       """
@@ -329,7 +334,7 @@ class ImageMaker(object):
          logger.info("pos: {}".format(self.user_pos))
       else:
          logger.error(
-            "[{}] is not in [{}]".format(self.user_pos, self.positions))
+               "[{}] is not in [{}]".format(self.user_pos, self.positions))
          raise UserInfoException("User position is incorrect!")
       self.user_id = Utility.validate(img_info_arr[2].strip(), self.re_id)
       if self.user_id == 0:
@@ -346,8 +351,10 @@ class ImageMaker(object):
                          error_correction=qrcode.constants.ERROR_CORRECT_L,
                          box_size=self.conf.getint("qrcode", "boxsize"),
                          border=self.conf.getint("qrcode", "border"))
-      name = unicodedata.normalize('NFKD', self.user_name).encode('ascii', 'ignore')
-      img_info = "Fullname: %s,Position: %s, Badge_Id: %s, Company: %s" % (name, self.user_pos, self.user_id, "www.tmasolutions.com")
+      name = unicodedata.normalize('NFKD', self.user_name).encode('ascii',
+                                                                  'ignore')
+      img_info = "Fullname: %s,Position: %s, Badge_Id: %s, Company: %s" % (
+         name, self.user_pos, self.user_id, "https://www.tma.vn")
       logger.info("info: {}".format(img_info))
       if self.arg.qr_text:
          qr_img = qrcode.make(self.arg.qr_text)
@@ -381,25 +388,26 @@ class ImageMaker(object):
          # Make background
          self.bg_img = Image.new('RGBA', (tpl_w, tpl_h), self.conf.get(
                "general", "backgroundcolor"))
-         img_cropt_w, img_cropt_h = self.img_cropt.size
-         img_cropt_pos = (int(self.tpl_avata_x - (img_cropt_w / 2)),
-                          int(self.tpl_avata_y - (img_cropt_h / 2)))
+         img_cropped_w, img_cropped_h = self.img_cropped.size
+         img_cropped_pos = (int(self.tpl_avatar_x - (img_cropped_w / 2)),
+                            int(self.tpl_avatar_y - (img_cropped_h / 2)))
          self.parse_user_info()
          if self.arg.verbose:
-            self.img_cropt.save(self.tmp_path + self.user_id + ".png",
-                                format="png")
-         self.bg_img.paste(self.img_cropt, img_cropt_pos)
+            self.img_cropped.save(self.tmp_path + self.user_id + ".png",
+                                  format="png")
+         self.bg_img.paste(self.img_cropped, img_cropped_pos)
          if self.arg.test:
             template_img.putalpha(125)
          self.bg_img.paste(template_img, (0, 0), mask=template_img)
-         self.parse_qr_code()
+         if self.arg.no_generate_qr:
+            self.parse_qr_code()
          draw = ImageDraw.Draw(self.bg_img)
 
-         curr_y += self.tpl_avata_y + img_cropt_pos[1]
+         curr_y += self.tpl_avatar_y + img_cropped_pos[1]
          th = self.conf.getint("username", "toppad")
          if self.user_name:
             curr_y += th
-            if not self.arg.auto_size:
+            if self.arg.no_auto_size:
                size = self.conf.getint("username", "size")
             else:
                size = self.base_text_size
@@ -421,13 +429,13 @@ class ImageMaker(object):
 
          if self.user_pos:
             curr_y += th + self.conf.getint("position", "toppad")
-            if not self.arg.auto_size:
+            if self.arg.no_auto_size:
                size = self.conf.getint("position", "size")
             else:
                size = self.base_text_size - 10
             font = ImageFont.truetype(os.path.join(CUR_PATH, self.conf.get(
-                                                            "position",
-                                                            "font")), size)
+                  "position",
+                  "font")), size)
             msg = self.user_pos.strip()
             tw, th = draw.textsize(msg, font=font)
             draw.text(((tpl_w - tw) / 2, curr_y), msg, self.conf.get(
@@ -435,13 +443,13 @@ class ImageMaker(object):
 
          if self.user_id:
             curr_y += th + self.conf.getint("userid", "toppad")
-            if not self.arg.auto_size:
+            if self.arg.no_auto_size:
                size = self.conf.getint("userid", "size")
             else:
                size = self.base_text_size - 15
             font = ImageFont.truetype(os.path.join(CUR_PATH, self.conf.get(
-                                                            "userid",
-                                                            "font")), size)
+                  "userid",
+                  "font")), size)
             msg = "ID: " + self.user_id.strip()
             tw, _ = draw.textsize(msg, font=font)
             draw.text(((tpl_w - tw) / 2, curr_y), msg,
@@ -449,12 +457,14 @@ class ImageMaker(object):
 
          # Saved in the same relative location
          self.bg_img.save(self.des_path + self.img_prefix + "-" +
-                          self.user_name + "_" + self.user_pos + "_" +
-                          self.user_id + "_" + str(self.img_num) + ".png",
-                          format="png")
+                          self.user_name.upper() + "_" +
+                          self.user_pos.upper() + "_" +
+                          self.user_id.upper() + "_" +
+                          str(self.img_num) + ".png", format="png")
 
       except IOError as error:
          logger.error("Error: %s" % error)
+
 
 def add_args(parser, action='exec'):
    """
@@ -477,10 +487,13 @@ def add_args(parser, action='exec'):
       parser.add_argument('-t', '--template',
                           default=config.get("template", "filename"),
                           help='Template file name')
+      parser.add_argument('-g', '--no-generate-qr',
+                          action='store_false', default=True,
+                          help='Skip generate QR code')
       parser.add_argument('-q', '--qr-text',
                           help='RQ code text')
-      parser.add_argument('-a', '--auto-size',
-                          action='store_true', default=True,
+      parser.add_argument('-a', '--no-auto-size',
+                          action='store_false', default=True,
                           help='Auto size for text')
       parser.add_argument('-l', '--loop',
                           type=bool, default=False,
@@ -489,12 +502,14 @@ def add_args(parser, action='exec'):
                           default=config.get('general', 'interval'),
                           help='Interval for looping the process')
 
+
 def parse_cli():
    """
    :return:
    """
    parser = argparse.ArgumentParser(description=__doc__.strip(),
-                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                    formatter_class=argparse
+                                    .ArgumentDefaultsHelpFormatter)
    parser.add_argument('-d', '--debug', action='store_true')
    parser.add_argument('--test', action='store_true')
    parser.add_argument('-v', '--verbose', action='store_true')
@@ -504,6 +519,7 @@ def parse_cli():
                                   help='Full Execution'), 'exec')
    return parser.parse_args()
 
+
 def setup_logging(debug=False):
    """
    :param debug:
@@ -512,30 +528,26 @@ def setup_logging(debug=False):
       log_level = logging.DEBUG
    else:
       log_level = logging.INFO
-   # logging.config.fileConfig('pictool.conf', disable_existing_loggers=True,
-   #                           defaults={'logfilename': 'pictool.log'})
-   # logging.getLogger().setLevel(log_level)
    logging.basicConfig(level=log_level,
-                       format='%(asctime)s %(levelname)s %(funcName)s %('
-                              'lineno)d : %(message)s',
+                       format='%(asctime)s %(levelname)-5s %(lineno)-4d '
+                              '%(funcName)s : %(message)s',
                        stream=sys.stderr,
                        filemode='w')
    global logger
    logger = logging.getLogger('sLogger')
+
 
 def main(args, config):
    """
    Main processing
    :return:
    """
-   # path = "//10.250.193.251/Softs/tmp/new padge/Dot 2 2019"
-   # out = "//10.250.193.251/Softs/tmp/new padge/Badge_by_tool/"
    files = []
    src_path = os.path.join(CUR_PATH, args.src_path)
    des_path = os.path.join(CUR_PATH, args.des_path)
    tmp_path = os.path.join(CUR_PATH, config.get("general", "tmppath"))
    cv_path = os.path.join(CUR_PATH, config.get("general", "convertedpath"))
-   format_list = ['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG']
+   format_list = uT.get_dict_positions()
 
    if args.convert:
       ImageMaker.convert_images(src_path, cv_path)
@@ -554,16 +566,18 @@ def main(args, config):
    while True:
       start = time.time()
       for file_name in files:
-         count = count + 1
+         count += 1
          logger.info("Executing: %s" % file_name)
          img_maker = ImageMaker(file_name, args, config)
          img_maker.execute()
       end = time.time()
-      logger.info("Generated [" + str(count) + " "
-                  "items] in [" + str(end - start) + "] seconds...")
+      logger.info("Generated [" + str(count) + " items] in [" + str(end -
+                                                                    start) +
+                  "] seconds...")
       if not args.loop:
          return
       Utility.countdown(int(args.interval))
+
 
 if __name__ == "__main__":
    config = Utility.get_config()

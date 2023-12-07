@@ -12,22 +12,20 @@ Copyright (C) 2021
 
 """
 import re
-import sys
-import time
-
-import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog as fd
-from tkinter import colorchooser as tkcolor
-from tkinter import messagebox
 import subprocess
+import tkinter as tk
 from threading import *
+from tkinter import colorchooser as tkcolor
+from tkinter import filedialog as fd
+from tkinter import messagebox
+from tkinter import ttk
 
 TITLE = "Image Producer"
 CONF = './config/config.ini'
 SEED = 3
 HEIGHT = 500
 WIDTH = 800
+
 
 class MainWindow(tk.Frame):
    """docstring for MainWindow"""
@@ -45,12 +43,12 @@ class MainWindow(tk.Frame):
       # style.configure("green.Horizontal.TProgressbar",
       #                 foreground='green', background='green')
       self.pb = ttk.Progressbar(
-         master,
-         orient='horizontal',
-         mode='indeterminate',
-         # style="red.Horizontal.TProgressbar",
-         length=280
-      )
+            master,
+            orient='horizontal',
+            mode='indeterminate',
+            # style="red.Horizontal.TProgressbar",
+            length=280
+            )
       self.processes = []
       self.init_window()
       self.create_widgets()
@@ -86,7 +84,7 @@ class MainWindow(tk.Frame):
       self.textbox.yview('end')
       vsb.pack(side="right", fill="y")
       self.pb.pack(fill="both", expand="yes", side="right",
-                        padx=10, pady=10, ipadx=5, ipady=5)
+                   padx=10, pady=10, ipadx=5, ipady=5)
       self.textbox.pack(fill="both", expand="yes", side="right",
                         padx=10, pady=10, ipadx=5, ipady=5)
       # create instance of file like object
@@ -122,7 +120,8 @@ class MainWindow(tk.Frame):
       Execute
       """
       self.plogger.insert('\n'.join([f'{k}:{v[1]}' for k,
-                                                       v in self.dict_val.items()]))
+                                                       v in
+                                     self.dict_val.items()]))
       self.save_config()
       self.plogger.insert("Processing ...")
       process = subprocess.Popen('runner.bat',
@@ -221,12 +220,12 @@ class MainWindow(tk.Frame):
       elif re.match(r'^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$', value):
          tb = tk.Button(master, text=value, width=20,
                         command=lambda: self.select_color(
-                           '%s_%s' % (sec, key)))
+                              '%s_%s' % (sec, key)))
          tb.grid(row=row, column=col, ipadx=5, sticky=tk.EW)
       elif re.match(r'^(.+)\/([^\/]+)\/$', value):
          tb = tk.Button(master, text=value, width=20,
                         command=lambda: self.select_folder(
-                           '%s_%s' % (sec, key)))
+                              '%s_%s' % (sec, key)))
          tb.grid(row=row, column=col, ipadx=5, sticky=tk.EW)
       elif re.match(r'^(.+)\/([^\/]+)$', value):
          tb = tk.Button(master, text=value, width=20,
@@ -284,10 +283,12 @@ class MainWindow(tk.Frame):
       with open(file, "w") as file_obj:
          conf.write(file_obj)
 
+
 class PrintLogger(object):  # create file like object
    """
    show log on simulated terminal
    """
+
    def __init__(self, textbox):  # pass reference to text widget
       self.textbox = textbox  # keep ref
 
@@ -307,6 +308,7 @@ class PrintLogger(object):  # create file like object
       """
       pass
 
+
 def get_config():
    """
    Using to get the configuration
@@ -322,15 +324,17 @@ def get_config():
    conf.read(CONF)
    return conf
 
+
 def main():
    """
    Main process
    """
    root = tk.Tk()
    # root.geometry("%dx%d" % (WIDTH, HEIGHT))
-   root.resizable(height = 500, width = 300)
+   root.resizable(height=500, width=300)
    app = MainWindow(root, get_config())
    root.mainloop()
+
 
 if __name__ == '__main__':
    main()

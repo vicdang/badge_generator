@@ -13,9 +13,9 @@ Using to generate and process image
 2. Auto crawling required images, icon, emoticons
 ### Prerequisites
 - Python >= 3.8
-- CV2 (Opencv-python)
+- CV2 (Opencv-python) <= 9.5.0
 - Numpy
-- PIL (Pilow)
+- PIL (Pillow)
 - QRCode
 
 ## ***Structure***
