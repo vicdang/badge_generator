@@ -45,7 +45,8 @@ class OwnCloudFileLister:
       Parameters
       ----------
       args : argparse.Namespace
-          Parsed arguments containing server_url, username, password, folder_path, and log_file.
+          Parsed arguments containing server_url, username, password,
+          folder_path, and log_file.
       """
       self.server_url = args.server_url
       self.username = args.username
@@ -71,7 +72,8 @@ class OwnCloudFileLister:
       logger = logging.getLogger('OwnCloudFileLister')
       logger.setLevel(logging.INFO)
 
-      formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+      formatter = logging.Formatter(
+          '%(asctime)s - %(levelname)s - %(message)s')
 
       # File handler
       file_handler = logging.FileHandler(self.log_file)
@@ -153,7 +155,7 @@ def parse_arguments():
    import argparse
 
    parser = argparse.ArgumentParser(
-      description='Connect to ownCloud and list files in a folder.')
+       description='Connect to ownCloud and list files in a folder.')
    parser.add_argument('-s', '--server', dest='server_url', type=str,
                        default="https://box.***.com.vn/",
                        help='URL of the ownCloud server')

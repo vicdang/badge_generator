@@ -63,17 +63,19 @@ class ImageCrawler(object):
         - url (str): URL path for images.
         - emp_id (str): Employee ID.
         """
+        prep = ''
         if self.arg.file_type == 0:
             name, uid, pos = emp_id.split('_')
             logger.info("emp_id :" + emp_id)
         if uid.startswith(('T', 'B')):
+            prep = uid[0]
             uid = uid[1:]
         # convert uid to int for remove heading zero, eg: 01234 -> 1234
         url = "%s/%s.jpg" % (url, int(uid))
         logger.debug('Downloading: %s' % url)
         local_file = "./img/%s.jpg" % str(uid)
         if self.arg.file_type == 0:
-            local_file = "./img/%s_%s_%s_1.jpg" % (name, str(uid), pos)
+            local_file = "./img/%s_%s%s_%s_1.jpg" % (name, prep, str(uid), pos)
         try:
             urllib.request.urlretrieve(url, local_file)
             logger.info("Downloaded : %s" % local_file)
@@ -163,7 +165,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Image Crawler')
     parser.add_argument('-w', '--workers', type=int, default=30,
                         help='Number of workers')
-    parser.add_argument('-f', '--file-path', type=str, default="./", nargs='?',
+    parser.add_argument('-f', '--file-path', type=str, default="./data.xlsx", nargs='?',
                         help='Path to the list IDs file')
     parser.add_argument('-l', '--link', type=str, 
                         default="https://intranet.t%sa.com.vn" % 'm', nargs='?',
