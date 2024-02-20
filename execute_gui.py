@@ -271,7 +271,7 @@ class MainWindow(tk.Frame):
       for k, v in self.dict_val.items():
          sec, key = k.split('_')
          self.conf.set(sec, key, self.dict_val[k][1])
-      self.export_config(self.conf, './config.ini')
+      self.export_config(self.conf, './config/config.ini')
 
    @staticmethod
    def export_config(conf, file):
