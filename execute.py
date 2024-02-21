@@ -332,6 +332,10 @@ class ImageMaker(object):
       if self.user_pos.strip().upper() in self.positions:
          self.user_pos = self.positions[self.user_pos.strip().upper()]
          logger.info("pos: {}".format(self.user_pos))
+      elif self.user_pos.strip().upper() in list(map(str.upper, 
+                                                     self.positions.values())):
+         self.user_pos = self.user_pos.strip().upper()
+         logger.info("pos: {}".format(self.user_pos))
       else:
          logger.error(
                "[{}] is not in [{}]".format(self.user_pos, self.positions))
