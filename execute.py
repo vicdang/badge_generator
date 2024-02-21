@@ -328,7 +328,7 @@ class ImageMaker(object):
                                         self.re_name)
       if self.user_name == 0:
          raise UserInfoException("User name not found!")
-      self.user_pos = img_info_arr[1].capitalize()
+      self.user_pos = img_info_arr[2].capitalize()
       if self.user_pos.strip().upper() in self.positions:
          self.user_pos = self.positions[self.user_pos.strip().upper()]
          logger.info("pos: {}".format(self.user_pos))
@@ -336,7 +336,7 @@ class ImageMaker(object):
          logger.error(
                "[{}] is not in [{}]".format(self.user_pos, self.positions))
          raise UserInfoException("User position is incorrect!")
-      self.user_id = Utility.validate(img_info_arr[2].strip(), self.re_id)
+      self.user_id = Utility.validate(img_info_arr[1].strip(), self.re_id)
       if self.user_id == 0:
          raise UserInfoException("User ID not found!")
       if len(img_info_arr) == 4:
