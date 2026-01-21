@@ -1,39 +1,58 @@
 # -*- coding: utf-8 -*-
-# vim:ts=3:sw=3:expandtab
 """
----------------------------
-Copyright (C) 2022
-@Authors: Vic Dang
-@Date: 22-Mar-22
-@Version: 1.0
----------------------------
-"""
-# Import
-import os
-import sys
+Utility functions for badge generator.
 
-# Add the parent directory of the current script to the Python path
-current_dir = os.path.dirname(os.path.realpath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
+Copyright (C) 2022
+Authors: Vic Dang
+Date: 22-Mar-22
+Version: 1.0
+"""
+
+from pathlib import Path
+from typing import Dict, List
+
 from config import app_conf as conf
 
 
 class Utilities:
+    """Utility functions for file handling and configuration."""
 
-   @staticmethod
-   def check_file_type(file_path):
-      if file_path.lower().endswith(('.xlsx', '.xls')):
-         return "excel"
-      elif file_path.lower().endswith(('.txt', '.ini')):
-         return "txt"
-      else:
-         return "Unknown"
+    @staticmethod
+    def check_file_type(file_path: str) -> str:
+        """
+        Check the file type based on extension.
 
-   @staticmethod
-   def get_dict_positions():
-      return conf.positions
+        Args:
+            file_path: Path to the file.
 
-   @staticmethod
-   def get_list_file_extensions():
-      return conf.file_extensions
+        Returns:
+            File type as string: 'excel', 'txt', or 'Unknown'.
+        """
+        ext = Path(file_path).suffix.lower()
+        
+        if ext in {'.xlsx', '.xls'}:
+            return "excel"
+        elif ext in {'.txt', '.ini'}:
+            return "txt"
+        
+        return "Unknown"
+
+    @staticmethod
+    def get_dict_positions() -> Dict[str, str]:
+        """
+        Get position mapping dictionary.
+
+        Returns:
+            Dictionary mapping position codes to position names.
+        """
+        return conf.positions
+
+    @staticmethod
+    def get_list_file_extensions() -> List[str]:
+        """
+        Get list of supported file extensions.
+
+        Returns:
+            List of file extensions (without dots).
+        """
+        return conf.file_extensions

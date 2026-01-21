@@ -1,225 +1,375 @@
 # -*- coding: utf-8 -*-
-# vim:ts=3:sw=3:expandtab
 """
----------------------------
+Image crawler - download images from URLs using multi-threading.
+
 Copyright (C) 2022
-@Authors: Vic Dang
-@Date: 22-Mar-22
-@Version: 1.0
----------------------------
+Authors: Vic Dang
+Date: 22-Mar-22
+Version: 1.0
+
 Usage example:
-  - crawl_image.py <options>
+  python image_crawler.py --workers 10 --file-path ./data.xlsx
 """
 
 import argparse
-import urllib.request
+import json
 import logging
+import logging.config
 import queue
+import socket
 import sys
 import threading
-import json
-from util import Utilities as ut
+import urllib.request
+import urllib.error
+from pathlib import Path
+from typing import List, Optional, Dict
+
+from tools.util import Utilities as ut
 
 logger = logging.getLogger(__name__)
-logger.setLevel("DEBUG")
-CONF = '../config/'
-POS_MAP = {}
+logger.setLevel(logging.DEBUG)
 
 
-class ImageCrawler(object):
+class ImageCrawler:
     """
-    A class to crawl and download images from URLs.
+    Multi-threaded image downloader from URLs.
 
-    Methods:
-    - __init__(*args, **kwargs): Initializes ImageCrawler.
-    - download_image(url, emp_id): Downloads an image from a given URL and employee ID.
-    - start_workers(thread_func, q, workers=None, **kwargs): Starts worker threads for image downloading tasks.
-    - start_tasks(q, tasks): Starts image downloading tasks using a queue.
-    - thread_func(q_item, thread_no): Function for worker threads to download images.
-    - run(): Runs the image crawler.
+    Downloads images from a web server based on employee IDs and stores them
+    locally. Supports configurable worker threads for parallel downloads.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        workers: int = 10,
+        base_url: str = "https://intranet.tma.com.vn/images/emp_images/big_new",
+        file_type: int = 0,
+        timeout: int = 30
+    ) -> None:
         """
         Initialize ImageCrawler.
 
         Args:
-        - arg (str): An argument (default: None).
-        - tasks (list): A list of tasks (default: None).
-        - workers (int): Number of worker threads (default: 10).
-        - url (str): URL path for images (default: '/images/emp_images/big_new').
+            workers: Number of worker threads for parallel downloads.
+            base_url: Base URL for downloading images.
+            file_type: File type identifier (0: Excel format).
+            timeout: Timeout in seconds for download requests.
         """
-        super(ImageCrawler, self).__init__()
-        self.arg = kwargs.get('arg', None)
-        self.tasks = kwargs.get('tasks', None)
-        self.workers = range(int(kwargs.get('workers', 10)))
-        self.url = "https://intranet.t%sa.com.vn%s" % ('m', '/images/emp_images/big_new')
+        self.workers = workers
+        self.base_url = base_url
+        self.file_type = file_type
+        self.timeout = timeout
+        self.failed_downloads: List[str] = []
+        self.successful_downloads: int = 0
 
-    def download_image(self, url, emp_id):
+    def download_image(self, url: str, emp_id: str, output_path: Path) -> bool:
         """
-        Download an image from a given URL and employee ID.
+        Download a single image from URL.
 
         Args:
-        - url (str): URL path for images.
-        - emp_id (str): Employee ID.
+            url: URL to download from.
+            emp_id: Employee ID (format: name_id_position).
+            output_path: Directory to save the image.
+
+        Returns:
+            True if download successful, False otherwise.
         """
-        prep = ''
-        if self.arg.file_type == 0:
-            name, uid, pos = emp_id.split('_')
-            logger.info("emp_id :" + emp_id)
-        if uid.startswith(('T', 'B')):
-            prep = uid[0]
-            uid = uid[1:]
-        # convert uid to int for remove heading zero, eg: 01234 -> 1234
-        url = "%s/%s.jpg" % (url, int(uid))
-        logger.debug('Downloading: %s' % url)
-        local_file = "./img/%s.jpg" % str(uid)
-        if self.arg.file_type == 0:
-            local_file = "./img/%s_%s%s_%s_1.jpg" % (name, prep, str(uid), pos)
         try:
-            urllib.request.urlretrieve(url, local_file)
-            logger.info("Downloaded : %s" % local_file)
+            parts = emp_id.split('_')
+            if len(parts) < 3:
+                logger.warning(f"Invalid employee ID format: {emp_id}")
+                return False
+
+            name, uid, pos = parts[0], parts[1], parts[2]
+            
+            # Handle prefix (T/B)
+            prep = ""
+            if uid and uid[0] in ('T', 'B'):
+                prep = uid[0]
+                uid = uid[1:]
+            
+            # Convert UID to integer to remove leading zeros
+            try:
+                uid_int = int(uid)
+            except ValueError:
+                logger.error(f"Invalid UID format: {uid}")
+                return False
+            
+            download_url = f"{url}/{uid_int}.webp"
+            
+            # Construct output filename
+            output_file = output_path / f"{name}_{prep}{uid_int}_{pos}_1.webp"
+            
+            logger.debug(f"Downloading: {download_url}")
+            
+            # Set socket timeout for the download
+            socket.setdefaulttimeout(self.timeout)
+            urllib.request.urlretrieve(download_url, str(output_file))
+            logger.info(f"Downloaded: {output_file}")
+            self.successful_downloads += 1
+            return True
+            
+        except urllib.error.HTTPError as err:
+            logger.error(f"HTTP Error downloading {emp_id}: {err}")
+            self.failed_downloads.append(emp_id)
+            return False
+        except urllib.error.URLError as err:
+            logger.error(f"URL Error downloading {emp_id}: {err}")
+            self.failed_downloads.append(emp_id)
+            return False
         except Exception as err:
-            logger.error("Failed to download : %s - %s" % (local_file, url))
-            # raise err
+            logger.error(f"Failed to download {emp_id}: {err}")
+            self.failed_downloads.append(emp_id)
+            return False
 
-    def start_workers(self, thread_func, q, workers=None, **kwargs):
+    def _worker_thread(
+        self,
+        task_queue: queue.Queue,
+        thread_no: int,
+        output_path: Path
+    ) -> None:
         """
-        Start worker threads for image downloading tasks.
+        Worker thread function for processing download tasks.
 
         Args:
-        - thread_func (function): Function for worker threads to download images.
-        - q (queue.Queue): Queue for tasks.
-        - workers (range): Range of worker threads (default: self.workers).
-        """
-        workers = workers if workers else self.workers
-        for worker in workers:
-            wk = threading.Thread(target=thread_func,
-                                  args=(q, worker,),
-                                  daemon=True)
-            wk.start()
-
-    def start_tasks(self, q, tasks):
-        """
-        Start image downloading tasks using a queue.
-
-        Args:
-        - q (queue.Queue): Queue for tasks.
-        - tasks (list): List of tasks to download images.
-        """
-        for i in tasks:
-            i = i.strip()
-            q.put(i)
-        q.join()
-
-    def thread_func(self, q_item, thread_no):
-        """
-        Function for worker threads to download images.
-
-        Args:
-        - q_item (queue.Queue): Queue item for tasks.
-        - thread_no (int): Thread number.
+            task_queue: Queue containing download tasks.
+            thread_no: Thread number identifier.
+            output_path: Directory to save downloaded images.
         """
         while True:
-            task_item = q_item.get()
-            ImageCrawler.download_image(self, self.url, task_item)
-            q_item.task_done()
-            logger.debug('Thread [%s] is doing [%s]...' %
-                         (str(thread_no), str(task_item)))
+            try:
+                emp_id = task_queue.get(timeout=1)
+                if emp_id is None:
+                    break
+                
+                logger.debug(f"Thread {thread_no} processing: {emp_id}")
+                self.download_image(self.base_url, emp_id, output_path)
+                
+            except queue.Empty:
+                continue
+            finally:
+                task_queue.task_done()
 
-    def run(self):
+    def start_workers(
+        self,
+        task_queue: queue.Queue,
+        output_path: Path,
+        num_workers: Optional[int] = None
+    ) -> List[threading.Thread]:
         """
-        Run the image crawler.
+        Start worker threads for parallel downloading.
+
+        Args:
+            task_queue: Queue of download tasks.
+            output_path: Directory to save downloaded images.
+            num_workers: Number of worker threads (default: self.workers).
+
+        Returns:
+            List of started worker threads.
         """
-        q = queue.Queue()
-        self.start_workers(self.thread_func, q)
-        self.start_tasks(q, self.tasks)
-        return
+        num_workers = num_workers or self.workers
+        threads: List[threading.Thread] = []
+        
+        for i in range(num_workers):
+            thread = threading.Thread(
+                target=self._worker_thread,
+                args=(task_queue, i, output_path),
+                daemon=True
+            )
+            thread.start()
+            threads.append(thread)
+        
+        return threads
+
+    def download_batch(
+        self,
+        emp_ids: List[str],
+        output_path: str
+    ) -> Dict[str, int]:
+        """
+        Download multiple images using worker threads.
+
+        Args:
+            emp_ids: List of employee IDs to download.
+            output_path: Directory to save images.
+
+        Returns:
+            Dictionary with statistics: {successful, failed, total}
+        """
+        output_dir = Path(output_path)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        task_queue: queue.Queue = queue.Queue()
+        
+        # Start worker threads
+        threads = self.start_workers(task_queue, output_dir)
+        
+        # Queue all tasks
+        for emp_id in emp_ids:
+            emp_id = emp_id.strip()
+            if emp_id:
+                task_queue.put(emp_id)
+        
+        # Wait for queue to be processed
+        task_queue.join()
+        
+        # Signal workers to stop
+        for _ in range(len(threads)):
+            task_queue.put(None)
+        
+        # Wait for all threads
+        for thread in threads:
+            thread.join()
+        
+        return {
+            'successful': self.successful_downloads,
+            'failed': len(self.failed_downloads),
+            'total': len(emp_ids),
+            'failed_ids': self.failed_downloads
+        }
 
 
-def setup_logging(debug=False):
+def setup_logging(debug: bool = False) -> None:
     """
-    Setup the logging configuration.
+    Setup logging configuration.
 
     Args:
-    - debug (bool): Debug flag (default: False).
+        debug: Enable debug-level logging.
     """
-    if debug:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
-    logging.basicConfig(level=log_level,
-                        format='%(asctime)s - %(levelname)s %(threadName)s - %('
-                               'name)s %(funcName)s %(lineno)d : %('
-                               'message)s',
-                        stream=sys.stderr,
-                        filemode='w')
-    global logger
-    logger = logging.getLogger('sLogger')
+    log_level = logging.DEBUG if debug else logging.INFO
+    
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(levelname)s - %(threadName)s - '
+               '%(name)s - %(funcName)s:%(lineno)d - %(message)s',
+        stream=sys.stderr
+    )
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     """
     Parse command-line arguments.
+
+    Returns:
+        Parsed command-line arguments.
     """
-    parser = argparse.ArgumentParser(description='Image Crawler')
-    parser.add_argument('-w', '--workers', type=int, default=30,
-                        help='Number of workers')
-    parser.add_argument('-f', '--file-path', type=str, default="./data.xlsx", nargs='?',
-                        help='Path to the list IDs file')
-    parser.add_argument('-l', '--link', type=str, 
-                        default="https://intranet.t%sa.com.vn" % 'm', nargs='?',
-                        help='Path to the folder to create mock data')
-    parser.add_argument('-d', '--debug', action='store_true',
-                        help='Enable debug mode')
+    parser = argparse.ArgumentParser(
+        description='Download images from web server using multi-threading.'
+    )
+    parser.add_argument(
+        '-w', '--workers',
+        type=int,
+        default=10,
+        help='Number of worker threads (default: 10)'
+    )
+    parser.add_argument(
+        '-f', '--file-path',
+        type=str,
+        default="./data.xlsx",
+        help='Path to file containing list of employee IDs'
+    )
+    parser.add_argument(
+        '-u', '--url',
+        type=str,
+        default="https://intranet.tma.com.vn/images/emp_images/big_new",
+        help='Base URL for downloading images'
+    )
+    parser.add_argument(
+        '-o', '--output',
+        type=str,
+        default="./img/src_img",
+        help='Output directory for downloaded images'
+    )
+    parser.add_argument(
+        '-d', '--debug',
+        action='store_true',
+        help='Enable debug mode'
+    )
+    parser.add_argument(
+        '-t', '--timeout',
+        type=int,
+        default=30,
+        help='Timeout in seconds for downloads'
+    )
+    
     return parser.parse_args()
 
 
-def get_data(file):
+def get_data_from_file(file_path: str) -> List[str]:
     """
-    Get data from a file.
+    Extract employee IDs from data file.
 
     Args:
-    - file (str): File path.
+        file_path: Path to data file (Excel or text).
 
     Returns:
-    - int: File type (0: excel, 1: other formats).
-    - list: List of tasks/data.
+        List of employee IDs.
     """
-    if ut.check_file_type(file) == 'excel':
-        data = []
-        from openpyxl import load_workbook
-        workbook = load_workbook(filename=file)
-        sheet = workbook.active
-        skip_first_row = True
-        for row in sheet.iter_rows(values_only=True):
-            if skip_first_row:
-                skip_first_row = False
-                continue
-            uid, name, pos = row[1:4]
-            data.append('_'.join([name, str(uid), pos]))
-        workbook.close()
-        return 0, data
-    else:
-        with open(file, 'r') as id_list:
-            return 1, id_list.readlines()
+    data: List[str] = []
+    file_type = ut.check_file_type(file_path)
+    
+    if file_type == "excel":
+        try:
+            from openpyxl import load_workbook
+            workbook = load_workbook(filename=file_path)
+            sheet = workbook.active
+            skip_first = True
+            
+            for row in sheet.iter_rows(values_only=True):
+                if skip_first:
+                    skip_first = False
+                    continue
+                
+                if len(row) >= 4:
+                    uid, name, pos = row[1], row[2], row[3]
+                    emp_id = f"{name}_{uid}_{pos}"
+                    data.append(emp_id)
+        except Exception as err:
+            logger.error(f"Error reading Excel file: {err}")
+    
+    elif file_type == "txt":
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = [line.strip() for line in f if line.strip()]
+        except Exception as err:
+            logger.error(f"Error reading text file: {err}")
+    
+    return data
 
 
-def main(args):
-    """
-    Main function to execute the image crawling process.
-
-    Args:
-    - args: Command-line arguments.
-    """
+def main() -> None:
+    """Main execution function."""
     args = parse_arguments()
     setup_logging(args.debug)
-    f_type, tasks = get_data(args.file_path)
-    args.file_type = f_type
-    imgc = ImageCrawler(arg=args, tasks=tasks, workers=args.workers)
-    imgc.run()
-    return
+    
+    logger.info(f"Image Crawler Started")
+    logger.info(f"Workers: {args.workers}, Timeout: {args.timeout}s")
+    
+    # Get employee IDs from file
+    emp_ids = get_data_from_file(args.file_path)
+    
+    if not emp_ids:
+        logger.warning(f"No employee IDs found in {args.file_path}")
+        return
+    
+    logger.info(f"Found {len(emp_ids)} employee IDs to process")
+    
+    # Download images
+    crawler = ImageCrawler(
+        workers=args.workers,
+        base_url=args.url,
+        timeout=args.timeout
+    )
+    
+    stats = crawler.download_batch(emp_ids, args.output)
+    
+    logger.info(f"\n=== Download Summary ===")
+    logger.info(f"Total: {stats['total']}")
+    logger.info(f"Successful: {stats['successful']}")
+    logger.info(f"Failed: {stats['failed']}")
+    
+    if stats['failed_ids']:
+        logger.warning(f"Failed IDs: {stats['failed_ids']}")
 
 
-if __name__ == '__main__':
-    main(sys.argv[1:])
+if __name__ == "__main__":
+    main()

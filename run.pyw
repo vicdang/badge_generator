@@ -26,7 +26,7 @@ from threading import *
 TITLE = "Image Producer"
 CONF = './config.ini'
 SEED = 3
-HEIGHT = 500
+HEIGHT = 800
 WIDTH = 800
 
 class MainWindow(tk.Frame):
@@ -327,7 +327,7 @@ def main():
    """
    root = tk.Tk()
    # root.geometry("%dx%d" % (WIDTH, HEIGHT))
-   root.resizable(height = 500, width = 300)
+   root.resizable(height = HEIGHT, width = WIDTH)
    app = MainWindow(root, get_config())
    root.mainloop()
 

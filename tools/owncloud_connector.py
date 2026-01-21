@@ -1,186 +1,279 @@
 # -*- coding: utf-8 -*-
-# vim:ts=3:sw=3:expandtab
 """
----------------------------
+OwnCloud connector - list files and folders from OwnCloud server.
+
 Copyright (C) 2021
-@Authors: Vic Dang
-@Skype: traxanh_dl
-@Date: 16-Dec-21
-@Version: 1.0
----------------------------
+Authors: Vic Dang
+Date: 16-Dec-21
+Version: 1.0
+
 Usage example:
-+ python owncloud_connector.py -s "https://box.***.com.vn/" -u "dnnvu" -p
-                                  "***" -f "//IMG Badge ID/"
+  python owncloud_connector.py \
+    -s "https://box.company.com/" \
+    -u "username" \
+    -p "password" \
+    -f "//IMG Badge ID/"
 """
 
+import argparse
 import logging
-from owncloud import Client
-import name_verifier
+import logging.handlers
+from typing import Optional, List
+
+try:
+    from owncloud import Client
+except ImportError:
+    Client = None
+
+from tools.name_verifier import ImageNameVerifier
 
 
-class OwnCloudFileLister:
-   """
-   A class to interact with ownCloud and list files/folders.
+class OwnCloudConnector:
+    """Connect to OwnCloud server and manage files."""
 
-   Methods
-   -------
-   connect_to_owncloud()
-       Connects to the ownCloud server.
+    def __init__(
+        self,
+        server_url: str,
+        username: str,
+        password: str,
+        folder_path: str = "/",
+        log_file: str = "./log.log"
+    ) -> None:
+        """
+        Initialize OwnCloud connector.
 
-   list_all_folders_recursive()
-       Lists all folders recursively in ownCloud.
+        Args:
+            server_url: OwnCloud server URL.
+            username: OwnCloud username.
+            password: OwnCloud password.
+            folder_path: Folder path to list.
+            log_file: Path to log file.
 
-   list_folders_recursive(folder_path)
-       Lists folders recursively starting from a given folder path.
+        Raises:
+            ImportError: If owncloud package is not installed.
+        """
+        if Client is None:
+            raise ImportError("owncloud package is required. Install with: pip install owncloud")
 
-   list_files_in_folder()
-       Lists files in a specified folder and verifies their names.
+        self.server_url = server_url
+        self.username = username
+        self.password = password
+        self.folder_path = folder_path
+        self.log_file = log_file
 
-   """
+        self.logger = self._setup_logger()
+        self.client = self._connect()
+        self.verifier = ImageNameVerifier(
+            folder_path=folder_path,
+            log_file=log_file
+        )
 
-   def __init__(self, args):
-      """
-      Initializes the OwnCloudFileLister class.
+    def _setup_logger(self) -> logging.Logger:
+        """
+        Setup logging configuration.
 
-      Parameters
-      ----------
-      args : argparse.Namespace
-          Parsed arguments containing server_url, username, password,
-          folder_path, and log_file.
-      """
-      self.server_url = args.server_url
-      self.username = args.username
-      self.password = args.password
-      self.folder_path = args.folder_path
-      self.log_file = args.log_file
+        Returns:
+            Configured logger instance.
+        """
+        logger = logging.getLogger('OwnCloudConnector')
+        logger.setLevel(logging.INFO)
 
-      # Initialize logger
-      self.logger = self.setup_logger()
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s'
+        )
 
-      self.client = self.connect_to_owncloud()
-      self.verifier = name_verifier.ImageNameVerifier(args)
+        # File handler
+        file_handler = logging.FileHandler(
+            self.log_file,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
-   def setup_logger(self):
-      """
-      Sets up logging configuration.
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
-      Returns
-      -------
-      logging.Logger
-          Configured logger instance.
-      """
-      logger = logging.getLogger('OwnCloudFileLister')
-      logger.setLevel(logging.INFO)
+        return logger
 
-      formatter = logging.Formatter(
-          '%(asctime)s - %(levelname)s - %(message)s')
+    def _connect(self) -> Client:
+        """
+        Connect to OwnCloud server.
 
-      # File handler
-      file_handler = logging.FileHandler(self.log_file)
-      file_handler.setLevel(logging.INFO)
-      file_handler.setFormatter(formatter)
-      logger.addHandler(file_handler)
+        Returns:
+            Connected OwnCloud client.
 
-      # Stream handler for terminal logging
-      stream_handler = logging.StreamHandler()
-      stream_handler.setLevel(logging.INFO)
-      stream_handler.setFormatter(formatter)
-      logger.addHandler(stream_handler)
+        Raises:
+            Exception: If connection fails.
+        """
+        try:
+            client = Client(self.server_url)
+            client.login(self.username, self.password)
+            self.logger.info(f"Connected to OwnCloud: {self.server_url}")
+            return client
+        except Exception as err:
+            self.logger.error(f"Failed to connect to OwnCloud: {err}")
+            raise
 
-      return logger
+    def list_folders_recursive(
+        self,
+        folder_path: str = "/"
+    ) -> None:
+        """
+        Recursively list folders from OwnCloud.
 
-   def connect_to_owncloud(self):
-      """
-      Connects to the ownCloud server.
+        Args:
+            folder_path: Starting folder path.
+        """
+        try:
+            items = self.client.list(folder_path)
+            
+            if not items:
+                self.logger.debug(f"No items in {folder_path}")
+                return
+            
+            for item in items:
+                if item.is_dir():
+                    self.logger.info(f"Dir: {item.path}")
+                    self.list_folders_recursive(item.path)
+                else:
+                    self.logger.info(f"File: {item.path}")
+                    
+        except Exception as err:
+            self.logger.error(f"Error listing {folder_path}: {err}")
 
-      Returns
-      -------
-      owncloud.Client
-          Connected ownCloud client.
-      """
-      oc = Client(self.server_url)
-      oc.login(self.username, self.password)
-      self.logger.info(f"Connected to ownCloud server: {self.server_url}")
-      return oc
+    def list_all_folders(self) -> None:
+        """List all folders recursively from root."""
+        self.logger.info("Listing all folders recursively:")
+        self.list_folders_recursive("/")
 
-   def list_all_folders_recursive(self):
-      """
-      Lists all folders recursively in ownCloud.
-      """
-      self.list_folders_recursive('/')
+    def list_files_in_folder(self) -> None:
+        """List and verify files in specified folder."""
+        try:
+            self.logger.info(f"Listing files in: {self.folder_path}")
+            items = self.client.list(self.folder_path)
+            
+            if not items:
+                self.logger.warning(f"No files found in {self.folder_path}")
+                return
+            
+            file_count = 0
+            valid_count = 0
+            
+            for item in items:
+                if not item.is_dir():
+                    filename = item.path.split('/')[-1]
+                    file_count += 1
+                    
+                    # Verify filename
+                    if self.verifier.verify_name(filename, file_count):
+                        valid_count += 1
+            
+            self.logger.info(f"\nSummary: {valid_count}/{file_count} files are valid")
+            
+        except Exception as err:
+            self.logger.error(f"Error listing files: {err}")
 
-   def list_folders_recursive(self, folder_path):
-      """
-      Lists folders recursively starting from a given folder path.
+    def get_file_count(self, folder_path: Optional[str] = None) -> int:
+        """
+        Get count of files in folder.
 
-      Parameters
-      ----------
-      folder_path : str
-          Path to the folder in ownCloud.
-      """
-      folder_contents = self.client.list(folder_path)
-      if folder_contents:
-         self.logger.info(f"Folders in '{folder_path}':")
-         for item in folder_contents:
-            if item.is_dir():
-               self.logger.info("Dir: " + item.path)
-               self.list_folders_recursive(item.path)
-            else:
-               self.logger.info("File: " + item.path)
+        Args:
+            folder_path: Folder path (default: self.folder_path).
 
-   def list_files_in_folder(self):
-      """
-      Lists files in a specified folder and verifies their names.
-      """
-      self.logger.info(f"Files in '{self.folder_path}':")
-      folder_contents = self.client.list(self.folder_path)
-      if folder_contents:
-         item_no = 0
-         for item in folder_contents:
-            if not item.is_dir():
-               f = item.path.split('/')[-1]
-               self.verifier.verify_name(f, item_no)
-               item_no += 1
-
-
-def parse_arguments():
-   """
-   Parses command line arguments.
-
-   Returns
-   -------
-   argparse.Namespace
-       Parsed arguments.
-   """
-   import argparse
-
-   parser = argparse.ArgumentParser(
-       description='Connect to ownCloud and list files in a folder.')
-   parser.add_argument('-s', '--server', dest='server_url', type=str,
-                       default="https://box.***.com.vn/",
-                       help='URL of the ownCloud server')
-   parser.add_argument('-u', '--username', type=str, help='ownCloud username')
-   parser.add_argument('-p', '--password', type=str, help='ownCloud password')
-   parser.add_argument('-f', '--folder', dest='folder_path', type=str,
-                       default="//IMG Badge ID/",
-                       help='Path to the folder in ownCloud')
-   parser.add_argument('-l', '--log-file', dest='log_file', type=str,
-                       default="./log.log", nargs='?',
-                       help='Path to the log file')
-   return parser.parse_args()
+        Returns:
+            Number of files.
+        """
+        folder_path = folder_path or self.folder_path
+        
+        try:
+            items = self.client.list(folder_path)
+            return sum(1 for item in items if not item.is_dir())
+        except Exception as err:
+            self.logger.error(f"Error counting files: {err}")
+            return 0
 
 
-def main():
-   """
-   Main function to execute ownCloud file listing and verification.
-   """
-   args = parse_arguments()
-   file_lister = OwnCloudFileLister(args)
-   if args.folder_path:
-      file_lister.list_files_in_folder()
-   else:
-      file_lister.list_all_folders_recursive()
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse command-line arguments.
+
+    Returns:
+        Parsed arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description='Connect to OwnCloud server and list files.'
+    )
+    parser.add_argument(
+        '-s', '--server',
+        dest='server_url',
+        type=str,
+        required=True,
+        help='OwnCloud server URL (e.g., https://box.company.com/)'
+    )
+    parser.add_argument(
+        '-u', '--username',
+        type=str,
+        required=True,
+        help='OwnCloud username'
+    )
+    parser.add_argument(
+        '-p', '--password',
+        type=str,
+        required=True,
+        help='OwnCloud password'
+    )
+    parser.add_argument(
+        '-f', '--folder',
+        dest='folder_path',
+        type=str,
+        default="/",
+        help='Folder path to list (default: root)'
+    )
+    parser.add_argument(
+        '-l', '--log-file',
+        dest='log_file',
+        type=str,
+        default="./log.log",
+        help='Path to log file'
+    )
+    parser.add_argument(
+        '--recursive',
+        action='store_true',
+        help='List folders recursively'
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Main execution function."""
+    args = parse_arguments()
+    
+    try:
+        connector = OwnCloudConnector(
+            server_url=args.server_url,
+            username=args.username,
+            password=args.password,
+            folder_path=args.folder_path,
+            log_file=args.log_file
+        )
+        
+        if args.recursive:
+            connector.list_all_folders()
+        else:
+            connector.list_files_in_folder()
+        
+        print("✓ OwnCloud operation completed")
+        
+    except ImportError as err:
+        print(f"✗ Error: {err}")
+    except Exception as err:
+        print(f"✗ Failed: {err}")
 
 
 if __name__ == "__main__":
-   main()
+    main()

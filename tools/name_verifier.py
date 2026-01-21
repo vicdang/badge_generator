@@ -1,165 +1,195 @@
 # -*- coding: utf-8 -*-
-# vim:ts=3:sw=3:expandtab
 """
----------------------------
+Image name verifier - validate image filenames against required pattern.
+
 Copyright (C) 2021
-@Authors: Vic Dang
-@Skype: traxanh_dl
-@Date: 16-Dec-21
-@Version: 1.0
----------------------------
+Authors: Vic Dang
+Date: 16-Dec-21
+Version: 1.0
+
 Usage example:
-    export PYTHONIOENCODING=utf-8
-    + python name_verifier.py path/to/your/image/folder path/to/log/file.log
+  export PYTHONIOENCODING=utf-8
+  python name_verifier.py ./img/src_img ./log.log
 """
 
 import argparse
 import logging
-import os
+import logging.handlers
 import re
-from util import Utilities as uT
+from pathlib import Path
+from typing import List, Optional
+
+from tools.util import Utilities as uT
 
 
 class ImageNameVerifier:
-   """
-   A class to verify image filenames.
+    """Verify image filenames against required naming pattern."""
 
-   Methods
-   -------
-   setup_logger()
-       Sets up the logger for logging verification results.
+    def __init__(self, folder_path: str, log_file: str) -> None:
+        """
+        Initialize ImageNameVerifier.
 
-   verify_names(names)
-       Verifies a list of image names.
+        Args:
+            folder_path: Path to folder containing images.
+            log_file: Path to log file.
+        """
+        self.folder_path = Path(folder_path)
+        self.log_file = log_file
+        
+        # Build regex pattern from configuration
+        positions = "|".join(uT.get_dict_positions().keys())
+        extensions = "|".join(uT.get_list_file_extensions())
+        
+        # Pattern: name_{T|B}?digits_position_[1-3].ext
+        self.pattern = (
+            r'^[^\s_]+ [\w\s\u00C0-\u017F]+_(T|B)?\d{6}_'
+            r'(' + positions + r')_[1-3]\.'
+            r'(' + extensions + r')$'
+        )
+        self.regex = re.compile(self.pattern, re.UNICODE | re.IGNORECASE)
+        self.logger = self._setup_logger()
 
-   verify_name(name)
-       Verifies an individual image name.
+    def _setup_logger(self) -> logging.Logger:
+        """
+        Setup logging configuration.
 
-   verify_image_names()
-       Verifies image filenames in a folder.
-   """
+        Returns:
+            Configured logger instance.
+        """
+        logger = logging.getLogger('image_name_verification')
+        logger.setLevel(logging.INFO)
 
-   def __init__(self, args):
-      """
-      Initializes the ImageNameVerifier class.
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s'
+        )
 
-      Parameters
-      ----------
-      args : argparse.Namespace
-          Parsed arguments containing folder_path and log_file.
-      """
-      self.folder_path = args.folder_path
-      self.log_file = args.log_file
-      self.position_map = "|".join(list(uT.get_dict_positions()))
-      self.file_extensions = "|".join(list(uT.get_list_file_extensions()))
-      self.pattern = r'^[^\s_]+ [\w\s\u00C0-\u017F]+_(T|B)?\d{6}_'\
-                     r'(' + self.position_map + ')_[1-3]\.' \
-                     r'(' + self.file_extensions + ')$'
-      self.regex = re.compile(self.pattern, re.UNICODE | re.IGNORECASE)
-      self.logger = self.setup_logger()
+        # File handler
+        file_handler = logging.FileHandler(
+            self.log_file,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
-   def setup_logger(self):
-      """
-      Sets up logging configuration.
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
-      Returns
-      -------
-      logging.Logger
-          Configured logger instance.
-      """
-      logger = logging.getLogger('image_name_verification')
-      logger.setLevel(logging.INFO)
+        return logger
 
-      formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    def verify_name(self, name: str, counter: int = 1) -> bool:
+        """
+        Verify a single filename.
 
-      # File handler
-      file_handler = logging.FileHandler(self.log_file,
-                                         encoding='utf-8')  # Specify encoding
-      file_handler.setLevel(logging.INFO)
-      file_handler.setFormatter(formatter)
-      logger.addHandler(file_handler)
+        Args:
+            name: Filename to verify.
+            counter: Counter for output formatting.
 
-      # Stream handler for terminal logging
-      stream_handler = logging.StreamHandler()
-      stream_handler.setLevel(logging.INFO)
-      stream_handler.setFormatter(formatter)
-      logger.addHandler(stream_handler)
+        Returns:
+            True if filename is valid, False otherwise.
+        """
+        is_valid = bool(self.regex.match(name))
+        status = "✓" if is_valid else "✗"
+        message = f"{counter:4} [{status}] {name}"
+        self.logger.info(message)
+        return is_valid
 
-      return logger
+    def verify_names(self, names: List[str]) -> int:
+        """
+        Verify a list of filenames.
 
-   def verify_names(self, names):
-      """
-      Verifies a list of image names.
+        Args:
+            names: List of filenames to verify.
 
-      Parameters
-      ----------
-      names : list
-          List of image filenames.
-      """
-      for name in names:
-         self.verify_name(name)
+        Returns:
+            Number of valid filenames.
+        """
+        valid_count = 0
+        for counter, name in enumerate(names, 1):
+            if self.verify_name(name, counter):
+                valid_count += 1
+        return valid_count
 
-   def verify_name(self, name, counter=1):
-      """
-      Verifies an individual image name.
+    def verify_folder(self) -> tuple:
+        """
+        Verify all image filenames in folder.
 
-      Parameters
-      ----------
-      name : str
-          Image filename to be verified.
-          @param name:
-          @param counter:
-      """
-      if self.regex.match(name):
-         message = f"{counter:4} [ _ ] {name}"
-         self.logger.info(message)
-      else:
-         message = f"{counter:4} [ X ] {name}"
-         self.logger.info(message)
+        Returns:
+            Tuple of (total_files, valid_files, invalid_files).
+        """
+        if not self.folder_path.exists():
+            self.logger.error(f"Folder not found: {self.folder_path}")
+            return 0, 0, []
 
-   def verify_image_names(self):
-      """
-      Verifies image filenames in a folder.
-      """
-      files = os.listdir(self.folder_path)
-
-      for file in files:
-         if self.regex.match(file):
-            message = f"[ _ ] {file}"
-            self.logger.info(message)
-         else:
-            message = f"[ X ] {file}"
-            self.logger.info(message)
-
-
-def parse_arguments():
-   """
-   Parses command line arguments.
-
-   Returns
-   -------
-   argparse.Namespace
-       Parsed arguments.
-   """
-   parser = argparse.ArgumentParser(
-      description='Verify image filenames in a folder.')
-   parser.add_argument('-f', '--folder-path', dest='folder_path', type=str,
-                       default="./mock_images", nargs='?',
-                       help='Path to the folder containing images')
-   parser.add_argument('-l', '--log-file', dest='log_file', type=str,
-                       default="./log.log", nargs='?',
-                       help='Path to the log file')
-   return parser.parse_args()
+        files = [f.name for f in self.folder_path.iterdir() if f.is_file()]
+        
+        self.logger.info(f"Verifying {len(files)} files in {self.folder_path}")
+        
+        valid_count = 0
+        invalid_files: List[str] = []
+        
+        for counter, filename in enumerate(files, 1):
+            if self.verify_name(filename, counter):
+                valid_count += 1
+            else:
+                invalid_files.append(filename)
+        
+        return len(files), valid_count, invalid_files
 
 
-def main():
-   """
-   Main function to execute verification of image filenames.
-   """
-   args = parse_arguments()
-   verifier = ImageNameVerifier(args)
-   verifier.verify_image_names()
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse command-line arguments.
+
+    Returns:
+        Parsed arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description='Verify image filenames against required pattern.'
+    )
+    parser.add_argument(
+        '-f', '--folder-path',
+        dest='folder_path',
+        type=str,
+        default="./mock_images",
+        help='Path to folder containing images'
+    )
+    parser.add_argument(
+        '-l', '--log-file',
+        dest='log_file',
+        type=str,
+        default="./log.log",
+        help='Path to log file'
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output'
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Main execution function."""
+    args = parse_arguments()
+    
+    verifier = ImageNameVerifier(args.folder_path, args.log_file)
+    total, valid, invalid = verifier.verify_folder()
+    
+    print(f"\n=== Verification Summary ===")
+    print(f"Total files: {total}")
+    print(f"Valid: {valid}")
+    print(f"Invalid: {len(invalid)}")
+    
+    if invalid and args.verbose:
+        print(f"\nInvalid files:")
+        for filename in invalid:
+            print(f"  - {filename}")
 
 
 if __name__ == "__main__":
-   main()
+    main()
