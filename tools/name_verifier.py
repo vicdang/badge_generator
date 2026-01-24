@@ -9,7 +9,7 @@ Version: 1.0
 
 Usage example:
   export PYTHONIOENCODING=utf-8
-  python name_verifier.py ./img/src_img ./log.log
+  python name_verifier.py ./images/source/src_img ./log.log
 """
 
 import argparse
@@ -19,7 +19,7 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
-from tools.util import Utilities as uT
+from .util import Utilities as uT
 
 
 class ImageNameVerifier:

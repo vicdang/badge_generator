@@ -43,7 +43,14 @@ class ImageManager:
         :param workers: Number of download threads
         :param timeout: Download timeout in seconds
         """
-        self.src_path = Path(src_path)
+        from pathlib import Path
+        import os
+        # Always resolve src_path relative to project root if not absolute
+        if not os.path.isabs(src_path):
+            PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+            self.src_path = PROJECT_ROOT / src_path
+        else:
+            self.src_path = Path(src_path)
         self.base_url = base_url.rstrip('/')
         self.workers = workers
         self.timeout = timeout
@@ -118,19 +125,23 @@ class ImageManager:
         """
         try:
             url = self.build_download_url(emp_id)
-            file_path = self.src_path / filename
+            # Add .jpg extension if not present
+            if not filename.endswith(('.jpg', '.jpeg', '.png', '.webp', '.bmp')):
+                filename_with_ext = f"{filename}.jpg"
+            else:
+                filename_with_ext = filename
+            file_path = self.src_path / filename_with_ext
             
             LOGGER.info(f"Downloading: {url} → {file_path}")
             
-            urllib.request.urlretrieve(
-                url,
-                str(file_path),
-                timeout=self.timeout
-            )
+            # Use urlopen for Python 3.14 compatibility
+            with urllib.request.urlopen(url, timeout=self.timeout) as response:
+                with open(str(file_path), 'wb') as out_file:
+                    out_file.write(response.read())
             
-            LOGGER.info(f"Successfully downloaded: {filename}")
-            self.successful_downloads.append(filename)
-            return True, f"Downloaded: {filename}"
+            LOGGER.info(f"Successfully downloaded: {filename_with_ext}")
+            self.successful_downloads.append(filename_with_ext)
+            return True, f"Downloaded: {filename_with_ext}"
             
         except urllib.error.URLError as err:
             msg = f"URL error for {filename}: {err}"

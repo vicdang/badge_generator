@@ -11,8 +11,6 @@ Version: 1.0
 from pathlib import Path
 from typing import Dict, List
 
-from config import app_conf as conf
-
 
 class Utilities:
     """Utility functions for file handling and configuration."""
@@ -28,7 +26,14 @@ class Utilities:
         Returns:
             File type as string: 'excel', 'txt', or 'Unknown'.
         """
-        ext = Path(file_path).suffix.lower()
+        from pathlib import Path
+        import os
+        # Always resolve file_path relative to project root if not absolute
+        if not os.path.isabs(file_path):
+            PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+            ext = (PROJECT_ROOT / file_path).suffix.lower()
+        else:
+            ext = Path(file_path).suffix.lower()
         
         if ext in {'.xlsx', '.xls'}:
             return "excel"
@@ -45,7 +50,8 @@ class Utilities:
         Returns:
             Dictionary mapping position codes to position names.
         """
-        return conf.positions
+        from src.config import get_position_dict
+        return get_position_dict()
 
     @staticmethod
     def get_list_file_extensions() -> List[str]:
@@ -55,4 +61,5 @@ class Utilities:
         Returns:
             List of file extensions (without dots).
         """
-        return conf.file_extensions
+        from src.config import get_file_extensions
+        return get_file_extensions()

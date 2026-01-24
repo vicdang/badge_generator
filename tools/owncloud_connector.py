@@ -25,7 +25,7 @@ try:
 except ImportError:
     Client = None
 
-from tools.name_verifier import ImageNameVerifier
+from .name_verifier import ImageNameVerifier
 
 
 class OwnCloudConnector:

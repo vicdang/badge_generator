@@ -1,156 +1,224 @@
 # ***Image Producer***
-Using to generate and process image
+Badge Generator Tool - Automatically generate ID badges with face detection and QR codes
+
+**Version:** 3.0.0 | **Status:** Production Ready | **Python:** 3.8+ | **License:** See LICENSE file
+
 ## ***General Information***
 ### Supporting Features
-1. Auto detect faces, resize, rotate, crop and convert image
-2. Collage images and template
-3. Placing text on manipulated image
-4. Generate QR code base on image data
+1. Auto detect faces, resize, rotate, crop and convert images
+2. Collage images with templates
+3. Place text on manipulated images
+4. Generate QR codes based on employee data
 5. Support Windows and Unix
+6. **GUI tool for easy badge generation** (recommended way to use)
+7. **Live preview panel** showing template, source images, and generated output
+8. **Auto-refresh preview** on every operation (Generate, Cleanup, Pull Image, Save Config)
 
 ### Future Features
-1. Integrate with storage tools like Ownloud, Drive, GGPhoto, Flickr...
-2. Auto crawling required images, icon, emoticons
+1. Integrate with storage tools like Owncloud, Drive, Google Photos, Flickr
+2. Auto crawling required images, icons, emoticons
+
 ### Prerequisites
 - Python >= 3.8
-- CV2 (Opencv-python) <= 9.5.0
-- Numpy
-- PIL (Pillow)
-- QRCode
+- OpenCV (cv2) 
+- NumPy
+- PIL/Pillow
+- qrcode
+- openpyxl (for Excel support)
 
-## ***Structure***
-Directory structure is shown below:
-
-```
-badge_generator/
-.
-|-- Haar\ Cascade
-|   `-- haarcascade_frontalface_default.xml
-|-- README.md                -> Should read first
-|-- config.ini
-|-- config_base.ini          -> Base config for the GUI
-|-- crawl_image.py           -> Use for crawling images from HR tool
-|-- execute.py               -> Main CLI app
-|-- execute_gui.py           -> Main GUI app
-|-- fonts
-|   |-- ARIALN.TTF
-|   |-- ...
-|-- img                      -> Your images here
-|   |-- cv_img               -> User for image convertion (optional)
-|   |   `-- README.md
-|   |-- des_img              -> Output here
-|   |   `-- README.md
-|   |-- src_img              -> Input here
-|   |   `-- README.md
-|   |-- template             -> Base template
-|   |   `-- README.md
-|   |   `-- template.png
-|   `-- tmp_img              -> User for debug face detection
-|       `-- README.md
-|-- pictool.conf             -> Root config
-|-- pictool.log              -> Root log
-|-- requirements.txt
-|-- positions.json           -> Positions register
-|-- run.bat
-|-- run.pyw                  -> Executor
-`-- test_gui                 -> For Owncloud feature support
-    |-- config_base.ini
-    `-- owncloud.py
+## ***Folder Structure***
 
 ```
-## ***Preparation***
-> [Badge Generator](https://github.com/vicdang/badge_generator.git)
+badge_generator/                    (Root project folder - git root)
+├── run.pyw                         ⭐ START HERE - GUI launcher (Windows)
+├── run.py                          Alternative Python launcher
+├── run.bat                         Debug launcher (shows console)
+├── requirements.txt
+├── execute.py                      CLI execution script
+├── config.ini                      Configuration file
+│
+├── src/                            Source code
+│   ├── badge_gui.py                ⭐ GUI application
+│   ├── config.py                   Centralized configuration
+│   ├── badge_generator.py
+│   └── core/
+│
+├── tools/                          Utility modules
+│   ├── image_crawler.py
+│   ├── image_manager.py
+│   └── runner.bat                  Called by GUI
+│
+├── config/                         Configuration
+│   ├── config.ini
+│   └── positions.json
+│
+├── images/                         Image folders
+│   ├── source/src_img/             🔒 Original images
+│   ├── output/                     Generated badges
+│   ├── templates/                  🔒 Templates
+│   └── temp/                       Temporary files
+│
+├── resources/                      Resources
+│   ├── fonts/
+│   └── haar_cascade/
+│
+├── docs/                           Documentation
+├── tests/                          Tests
+└── .git/                           Git root
 ```
-# Install python
- - Install python >= 3.8
 
-# clone repo
-$ git clone https://github.com/vicdang/badge_generator.git
+## ***Installation***
+
+```bash
+# Clone repository
+$ git clone <repo-url>
 $ cd badge_generator
- 
-# create virtual envirnoment and activate it
-$ python -m venv --prompt badge_gernator .venv
-$ source .venv/Scripts/activate
 
-# install python requirements
+# Create virtual environment
+$ python -m venv .venv
+
+# Activate virtual environment
+# Windows:
+$ .venv\Scripts\activate
+# macOS/Linux:
+$ source .venv/bin/activate
+
+# Install dependencies
 $ pip install -r requirements.txt
 ```
-## ***Procedure***
-1. Design your template and place it in `badge_generator/img/template/` follow format [Template](img/template/README.md)
-> - Eg: template.png
-2. Place your images in `badge_generator/img/src_img/` follow format [src_img](img/src_img/README.md)
-3. Execute commands
-4. Get output in `badge_generator/img/des_img/` follow format [des_img](img/des_img/README.md)
+
+## ***Quick Start (Recommended - GUI)***
+
+### Windows Users (Easiest)
+**Option 1 - Double-click:**
+> Double-click to execute `run.pyw`
+
+**Option 2 - Command line:**
+```bash
+python run.pyw
+```
+
+### All Users
+```bash
+# Make sure you're in the badge_generator folder
+python run.pyw
+```
+
+This launches the **Badge Generator GUI** where you can:
+- ✅ **Pull Images** - Crawl missing employee photos from intranet
+- ✅ **Save** - Save configuration changes
+- ✅ **Cleanup** - Clean up temporary image directories  
+- ✅ **Generate** - Generate badges with face detection and QR codes
+- 📊 **Monitor** - View progress in built-in terminal
+
+### GUI Features
+- **Configuration Editor** (Left Panel)
+  - Edit all application settings
+  - No need to touch config files
+
+- **Preview Panel** (Right Panel - Middle)
+  - Real-time display of template, source, and output images
+  - Auto-refreshes on every operation (Generate, Cleanup, Pull Image, Save Config)
+  - Thread-safe updates from background processes
+
+- **Terminal Output** (Right Panel - Bottom)
+  - Real-time execution logs
+  - Shows crawling and generation progress
+  - Adjustable height via config
+
+- **Control Buttons** (Right Panel - Very Bottom)
+  - Pull Image: Download missing employee photos
+  - Save: Save configuration changes
+  - Cleanup: Clean temporary files
+  - Generate: Start badge generation
+
 ---
-## ***Execute Command Line***
-```
-# For quick start
-Execute "run.pyw" (doubeclick or run by cmd)
 
-# For quick start with GUI
-$ python execute_gui.py
+## ***Command-Line Usage (Advanced)***
+- Generate badges
+- Monitor progress in the built-in terminal
 
-Optional : 
- - Modify configuration
- - click save for the next execution
- - And/Or click execute
-```
-## ***For General Help***
-```
-$ python execute.py --help
-usage: execute.py [-h] [-d] [--test] [-v] {exec} ...
+All configuration can be adjusted directly in the GUI and saved for future runs.
 
-- Authors: Vic Dang 
-- Skype: traxanh_dl 
-- Usage example: + python execute.py -d -v exec
+**For Debugging:**
+If you need to see error messages and debug output, use `run.bat` instead (Windows) or run with Python directly.
 
-positional arguments:
-  {exec}         Subcommand help
-    exec         Full Execution
+---
+## ***Advanced: Command-Line Usage***
 
-optional arguments:
-  -h, --help     show this help message and exit
-  -d, --debug
-  --test
-  -v, --verbose
-```
-
-## ***For Sub Command Help***
-```
-$ python execute.py exec --help
-usage: execute.py exec [-h] [-c] [--check-path] [-s SRC_PATH] [-f DES_PATH]
-                       [-t TEMPLATE] [-q QR_TEXT] [-a] [-l LOOP] [-i INTERVAL]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -c, --convert         Convert image to PNG format (default: False)
-  --check-path          Check out put (default: False)
-  -s SRC_PATH, --src-path SRC_PATH
-                        Path of the source folder (default: img/src_img/)
-  -f DES_PATH, --des-path DES_PATH
-                        Path of the destination folder (default: img/des_img/)
-  -t TEMPLATE, --template TEMPLATE
-                        Template file name (default:
-                        img/template/template_full.png)
-  -q QR_TEXT, --qr-text QR_TEXT
-                        RQ code text (default: None)
-  -a, --auto-size       Auto size for text (default: True)
-  -l LOOP, --loop LOOP  Lopping the process (default: False)
-  -i INTERVAL, --interval INTERVAL
-                        Interval for looping the process (default: 600)
-
-# Default execution
+### Default Execution
+```bash
+# Generate badges from images/source/src_img/
 python execute.py exec
 
-# Enable debug level and verbose
-python execute.py -d exec
+# With debug and verbose logging
 python execute.py -d -v exec
+
+# Convert images to PNG format
+python execute.py exec -c
+```
+
+### Cleanup Command
+```bash
+# Clean temporary files (preserves originals and templates)
+python execute.py cleanup
+
+# With debug output
+python execute.py -d cleanup
+```
+
+### Configuration
+Edit `config/config.ini` to customize behavior:
+
+```ini
+[cleanup]
+enabled = true
+clean_root = images/
+skip_paths = images/source/src_img/,images/templates/
+```
+
+## ***Data-Driven Workflow***
+The application now supports a data-driven approach:
+
+1. **Load employee data from Excel** (`tools/data.xlsx`)
+   - Format: Column 1=ID, Column 2=Name, Column 3=Position
+   
+2. **Discover available images** in `images/source/src_img/`
+
+3. **Automatically crawl missing images** from configured URL using the ImageCrawler
+   - Configured in `config/config.ini` [crawler] section
+   - Tries to download images for employees without photos
+
+4. **Process all available images** with employee data
+
+### Workflow Example
+```bash
+# 1. Prepare data.xlsx with employee information
+#    (Place in tools/data.xlsx)
+
+# 2. Run badge generation
+python execute.py exec
+
+# The system will:
+# - Load employees from tools/data.xlsx
+# - Check which images exist in images/source/src_img/
+# - Crawl missing images from the configured URL
+# - Generate badges for all employees with images
 ```
 
 ---
-# ***Others***
-## ***Make Some Cheers***
-I was not expecting that, but you can send a beer via 
-> PayPal: [@vicdane](https://paypal.me/vicdane)
-## Can I request for a feature or support
-Reach me out on my mail (git log is your friend), and we can discuss.
+
+# ***Support & Contribution***
+
+## Feature Requests & Support
+Reach out via GitHub issues or email (check git log).
+
+## Appreciation
+If this project helps you:
+> Coffee me via PayPal: [@vicdane](https://paypal.me/vicdane)
+
+Contact me via:
+>Email: [vudnn.dl@gmail.com](mailto:vudnn.dl@gmail.com)
+
+>Teams: [vudnn.dl@gmail.com]()
+

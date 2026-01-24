@@ -1,0 +1,152 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "badge-generator"
+version = "2.0.0"
+description = "Automatic badge generation tool with image downloading and face detection"
+readme = "docs/README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Badge Generator Team"},
+]
+keywords = [
+    "badge",
+    "generation",
+    "image",
+    "face-detection",
+    "qr-code",
+    "employee",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Multimedia :: Graphics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "Pillow>=9.0.0",
+    "opencv-python>=4.5.0",
+    "qrcode>=7.3.0",
+    "openpyxl>=3.7.0",
+    "requests>=2.25.0",
+    "python-dotenv>=0.19.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-timeout>=2.1.0",
+    "pytest-xdist>=3.0.0",
+    "black>=22.0",
+    "flake8>=4.0",
+    "mypy>=0.990",
+    "isort>=5.10.0",
+    "pylint>=2.12.0",
+]
+gui = [
+    "tkinter",
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-timeout>=2.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/vicdang/badge-generator"
+Documentation = "https://github.com/vicdang/badge-generator/blob/main/docs/README.md"
+Repository = "https://github.com/vicdang/badge-generator"
+"Bug Tracker" = "https://github.com/vicdang/badge-generator/issues"
+
+[project.scripts]
+badge-generator = "src.badge_generator:main"
+badge-gui = "src.badge_gui:main"
+
+[tool.setuptools]
+packages = ["src", "tools"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_glob = ["*/migrations/*"]
+known_third_party = ["PIL", "cv2", "qrcode", "openpyxl", "requests", "dotenv"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "e2e: End-to-end tests",
+    "gui: GUI tests",
+    "slow: Slow running tests",
+    "skip_on_ci: Skip in CI environments",
+]
+timeout = 300
+
+[tool.coverage.run]
+source = ["src", "tools"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+    "*/setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

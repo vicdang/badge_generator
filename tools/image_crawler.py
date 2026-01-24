@@ -24,7 +24,7 @@ import urllib.error
 from pathlib import Path
 from typing import List, Optional, Dict
 
-from tools.util import Utilities as ut
+from .util import Utilities as ut
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -101,9 +101,11 @@ class ImageCrawler:
             
             logger.debug(f"Downloading: {download_url}")
             
-            # Set socket timeout for the download
-            socket.setdefaulttimeout(self.timeout)
-            urllib.request.urlretrieve(download_url, str(output_file))
+            # Use urlopen with timeout instead of urlretrieve (Python 3.14 compatible)
+            with urllib.request.urlopen(download_url, timeout=self.timeout) as response:
+                with open(str(output_file), 'wb') as out_file:
+                    out_file.write(response.read())
+            
             logger.info(f"Downloaded: {output_file}")
             self.successful_downloads += 1
             return True
@@ -276,7 +278,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '-o', '--output',
         type=str,
-        default="./img/src_img",
+        default="./images/source/src_img",
         help='Output directory for downloaded images'
     )
     parser.add_argument(

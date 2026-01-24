@@ -15,7 +15,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 )
 
-from tools.image_manager import ImageManager
+from .image_manager import ImageManager
 
 
 def demo_basic_usage():
@@ -25,7 +25,7 @@ def demo_basic_usage():
     print("="*60)
     
     img_manager = ImageManager(
-        src_path="./img/src_img/",
+        src_path="./images/source/src_img/",
         base_url="https://intranet.company.com/images/emp_images/big_new"
     )
     
@@ -45,7 +45,7 @@ def demo_filename_parsing():
     print("="*60)
     
     img_manager = ImageManager(
-        src_path="./img/src_img/",
+        src_path="./images/source/src_img/",
         base_url="https://intranet.company.com/images/emp_images/big_new"
     )
     
@@ -69,7 +69,7 @@ def demo_check_files():
     print("="*60)
     
     img_manager = ImageManager(
-        src_path="./img/src_img/",
+        src_path="./images/source/src_img/",
         base_url="https://intranet.company.com/images/emp_images/big_new"
     )
     
@@ -92,7 +92,7 @@ def demo_missing_files():
     print("="*60)
     
     img_manager = ImageManager(
-        src_path="./img/src_img/",
+        src_path="./images/source/src_img/",
         base_url="https://intranet.company.com/images/emp_images/big_new"
     )
     
@@ -123,7 +123,7 @@ def demo_url_building():
     print("="*60)
     
     img_manager = ImageManager(
-        src_path="./img/src_img/",
+        src_path="./images/source/src_img/",
         base_url="https://intranet.company.com/images/emp_images/big_new"
     )
     
@@ -142,7 +142,7 @@ def demo_format_validation():
     print("="*60)
     
     img_manager = ImageManager(
-        src_path="./img/src_img/",
+        src_path="./images/source/src_img/",
         base_url="https://intranet.company.com/images/emp_images/big_new"
     )
     
@@ -170,7 +170,7 @@ def demo_download_simulation():
     print("="*60)
     
     img_manager = ImageManager(
-        src_path="./img/src_img/",
+        src_path="./images/source/src_img/",
         base_url="https://intranet.company.com/images/emp_images/big_new",
         workers=5
     )
