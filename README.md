@@ -3,7 +3,7 @@ Badge Generator Tool - Automatically generate ID badges with face detection and 
 
 **Version:** 3.0.0 | **Status:** Production Ready | **Python:** 3.8+ | **License:** See LICENSE file
 
-<img width="1314" height="862" alt="image" src="https://github.com/user-attachments/assets/a909615e-dcb8-4a9d-8220-442fb5e42fee" />
+<img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/a909615e-dcb8-4a9d-8220-442fb5e42fee" />
 
 ## ***General Information***
 ### Supporting Features
