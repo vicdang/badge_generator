@@ -29,7 +29,7 @@ Badge Generator Tool - Automatically generate ID badges with face detection and 
 ## ***Folder Structure***
 
 ```
-badge_generator/                    (Root project folder - git root)
+badgenerator/                    (Root project folder - git root)
 ├── run.pyw                         ⭐ START HERE - GUI launcher (Windows)
 ├── run.py                          Alternative Python launcher
 ├── run.bat                         Debug launcher (shows console)
@@ -40,7 +40,7 @@ badge_generator/                    (Root project folder - git root)
 ├── src/                            Source code
 │   ├── badge_gui.py                ⭐ GUI application
 │   ├── config.py                   Centralized configuration
-│   ├── badge_generator.py
+│   ├── badgenerator.py
 │   └── core/
 │
 ├── tools/                          Utility modules
@@ -72,7 +72,7 @@ badge_generator/                    (Root project folder - git root)
 ```bash
 # Clone repository
 $ git clone <repo-url>
-$ cd badge_generator
+$ cd badgenerator
 
 # Create virtual environment
 $ python -m venv .venv
@@ -100,7 +100,7 @@ python run.pyw
 
 ### All Users
 ```bash
-# Make sure you're in the badge_generator folder
+# Make sure you're in the badgenerator folder
 python run.pyw
 ```
 
