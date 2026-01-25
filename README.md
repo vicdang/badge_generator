@@ -1,4 +1,4 @@
-# ***Image Producer***
+# ***Badge Generator***
 Badge Generator Tool - Automatically generate ID badges with face detection and QR codes
 
 **Version:** 3.0.0 | **Status:** Production Ready | **Python:** 3.8+ | **License:** See LICENSE file
