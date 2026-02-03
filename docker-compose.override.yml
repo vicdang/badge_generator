@@ -1,0 +1,27 @@
+# Docker Compose Override for Development
+# This file is automatically loaded by Docker Compose and overrides docker-compose.yml
+# Use: docker-compose up (this file is applied automatically in development)
+
+version: '3.8'
+
+services:
+  badge-generator:
+    # Development settings
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONIOENCODING: "utf-8"
+      BADGE_ENV: "development"
+      DEBUG: "true"
+    
+    # Mount source code for live development
+    volumes:
+      - ./src:/app/src
+      - ./tools:/app/tools
+    
+    # Run in interactive mode for development
+    stdin_open: true
+    tty: true
+    
+    # Extended startup timeout for development
+    healthcheck:
+      start_period: 20s

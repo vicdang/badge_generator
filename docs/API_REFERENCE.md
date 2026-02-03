@@ -4,7 +4,7 @@ Complete API documentation for Badge Generator modules.
 
 ## Table of Contents
 
-1. [badge_generator Module](#badge_generator-module)
+1. [badgenerator Module](#badgenerator-module)
 2. [badge_gui Module](#badge_gui-module)
 3. [config Module](#config-module)
 4. [tools.image_manager](#tools-image_manager)
@@ -13,11 +13,11 @@ Complete API documentation for Badge Generator modules.
 
 ---
 
-## badge_generator Module
+## badgenerator Module
 
 Main CLI application for badge generation with multi-threaded image downloading.
 
-**Location:** `src/badge_generator.py`
+**Location:** `src/badgenerator.py`
 
 ### BadgeGenerator Class
 

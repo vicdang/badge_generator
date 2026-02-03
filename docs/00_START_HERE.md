@@ -11,7 +11,7 @@
 
 **Just want to use it?** Navigate to the project folder and run the GUI:
 ```bash
-cd badge_generator
+cd badgenerator
 python run.pyw
 ```
 
@@ -176,7 +176,7 @@ print(stats)  # {total, missing, downloaded, failed, ...}
 ## 📋 Files Structure
 
 ```
-badge_generator/
+badgenerator/
 ├── execute.py                    ✅ MODIFIED
 ├── tools/
 │   ├── image_manager.py         ✅ NEW (450+ lines)

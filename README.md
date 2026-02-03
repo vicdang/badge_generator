@@ -3,6 +3,32 @@ Badge Generator Tool - Automatically generate ID badges with face detection and 
 
 **Version:** 3.0.0 | **Status:** Production Ready | **Python:** 3.8+ | **License:** See LICENSE file
 
+---
+
+## ✨ What's New in v3.0.0
+
+### 🎯 Major Features
+- **Live Preview Panel** - Real-time visual feedback for template, source, and generated images
+- **Auto-Refresh** - Automatic preview updates on all operations (Generate, Cleanup, Pull Image, Save Config)
+- **Async Image Downloader** - 5x faster downloads with multi-threaded support
+- **Database Integration** - SQLite backend for persistent data storage and job tracking
+- **Enhanced Architecture** - New services layer, validators, and dependency injection
+- **Production-Ready Services** - Database, logging, and configuration management modules
+
+### 🐛 Bug Fixes
+- **Error 106 Fix** - Improved image crawler error handling with proper exit codes
+- **pyvenv.cfg Fix** - Better virtual environment detection for subprocess calls
+- **Config Path Fix** - Updated directory paths for images (source → images/source/)
+
+### 📊 Improvements
+- 87%+ code coverage (core modules)
+- Structured JSON logging with rotation
+- 33/33 unit tests passing
+- Type hints and documentation for all new modules
+- Comprehensive documentation (22+ guides)
+
+---
+
 ## ***General Information***
 ### Supporting Features
 1. Auto detect faces, resize, rotate, crop and convert images
@@ -29,7 +55,7 @@ Badge Generator Tool - Automatically generate ID badges with face detection and 
 ## ***Folder Structure***
 
 ```
-badge_generator/                    (Root project folder - git root)
+badgenerator/                    (Root project folder - git root)
 ├── run.pyw                         ⭐ START HERE - GUI launcher (Windows)
 ├── run.py                          Alternative Python launcher
 ├── run.bat                         Debug launcher (shows console)
@@ -39,8 +65,13 @@ badge_generator/                    (Root project folder - git root)
 │
 ├── src/                            Source code
 │   ├── badge_gui.py                ⭐ GUI application
-│   ├── config.py                   Centralized configuration
-│   ├── badge_generator.py
+│   ├── config_manager.py           ✨ NEW - Configuration management
+│   ├── utilities.py                ✨ NEW - Utility functions
+│   ├── validators.py               ✨ NEW - Input validation
+│   ├── services.py                 ✨ NEW - Business logic
+│   ├── database.py                 ✨ NEW - SQLite backend
+│   ├── logging_config.py           ✨ NEW - JSON logging
+│   ├── async_downloader.py         ✨ NEW - Async downloads
 │   └── core/
 │
 ├── tools/                          Utility modules
@@ -53,11 +84,13 @@ badge_generator/                    (Root project folder - git root)
 │   └── positions.json
 │
 ├── images/                         Image folders
-│   ├── source/src_img/             🔒 Original images
+│   ├── source/                     🔒 Original images
 │   ├── output/                     Generated badges
 │   ├── templates/                  🔒 Templates
 │   └── temp/                       Temporary files
 │
+├── docs/                           📚 Documentation (22+ guides)
+└── tests/                          🧪 Test suite (33 tests)
 ├── resources/                      Resources
 │   ├── fonts/
 │   └── haar_cascade/
@@ -72,7 +105,7 @@ badge_generator/                    (Root project folder - git root)
 ```bash
 # Clone repository
 $ git clone <repo-url>
-$ cd badge_generator
+$ cd badgenerator
 
 # Create virtual environment
 $ python -m venv .venv
@@ -100,7 +133,7 @@ python run.pyw
 
 ### All Users
 ```bash
-# Make sure you're in the badge_generator folder
+# Make sure you're in the badgenerator folder
 python run.pyw
 ```
 

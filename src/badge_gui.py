@@ -14,6 +14,7 @@ Usage example:
 import re
 import subprocess
 import sys
+import os
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -23,11 +24,107 @@ from tkinter import messagebox
 from tkinter import ttk
 from typing import Dict, Any, Optional, Tuple
 
+# First, write detailed diagnostics to a file
+_diagnostics = []
+_diagnostics.append(f"Python Executable: {sys.executable}")
+_diagnostics.append(f"Python Version: {sys.version}")
+_diagnostics.append(f"sys.path[0]: {sys.path[0] if sys.path else 'EMPTY'}")
+_diagnostics.append(f"Working Directory: {os.getcwd()}")
+_pil_error_details = None
+
+HAS_PIL = False
+HAS_PIL_IMAGE = False
+HAS_PIL_IMAGETK = False
+_pil_msg = "[SYSTEM] PIL Status: UNKNOWN"
+
 try:
-    from PIL import Image, ImageTk
-    HAS_PIL = True
-except ImportError:
-    HAS_PIL = False
+    _diagnostics.append("Attempting: from PIL import Image")
+    from PIL import Image
+    _diagnostics.append("SUCCESS: PIL.Image imported")
+    HAS_PIL_IMAGE = True
+except ImportError as e:
+    _diagnostics.append(f"FAILED: PIL.Image - {e}")
+    _pil_error_details = f"PIL.Image: {e}\n"
+except Exception as e:
+    _diagnostics.append(f"FAILED: PIL.Image (Exception) - {e}")
+    _pil_error_details = f"PIL.Image Exception: {e}\n"
+
+try:
+    _diagnostics.append("Attempting: from PIL import ImageTk")
+    from PIL import ImageTk
+    _diagnostics.append("SUCCESS: PIL.ImageTk imported")
+    HAS_PIL_IMAGETK = True
+except ImportError as e:
+    _diagnostics.append(f"FAILED: PIL.ImageTk - {e}")
+    if _pil_error_details:
+        _pil_error_details += f"PIL.ImageTk: {e}\n"
+    else:
+        _pil_error_details = f"PIL.ImageTk: {e}\n"
+except Exception as e:
+    _diagnostics.append(f"FAILED: PIL.ImageTk (Exception) - {e}")
+    if _pil_error_details:
+        _pil_error_details += f"PIL.ImageTk Exception: {e}\n"
+    else:
+        _pil_error_details = f"PIL.ImageTk Exception: {e}\n"
+
+# We need BOTH PIL.Image AND PIL.ImageTk for preview functionality
+HAS_PIL = HAS_PIL_IMAGE and HAS_PIL_IMAGETK
+
+if HAS_PIL:
+    _pil_msg = "[SYSTEM] PIL Status: AVAILABLE"
+    _diagnostics.append("PIL import: SUCCESS (both Image and ImageTk available)")
+else:
+    _pil_msg = f"[SYSTEM] PIL Status: NOT AVAILABLE"
+    if HAS_PIL_IMAGE and not HAS_PIL_IMAGETK:
+        _diagnostics.append("PIL import: PARTIAL - Image available but ImageTk FAILED")
+    elif HAS_PIL_IMAGETK and not HAS_PIL_IMAGE:
+        _diagnostics.append("PIL import: PARTIAL - ImageTk available but Image FAILED")
+    else:
+        _diagnostics.append("PIL import: FAILED - Both Image and ImageTk missing")
+    
+    # Create dummy classes so code doesn't crash if PIL is missing
+    class Image:
+        class Resampling:
+            LANCZOS = 1
+        @staticmethod
+        def open(*args, **kwargs):
+            raise RuntimeError("PIL not available")
+    class ImageTk:
+        @staticmethod
+        def PhotoImage(*args, **kwargs):
+            raise RuntimeError("PIL not available")
+
+# Try to diagnose further if PIL failed
+if not HAS_PIL:
+    try:
+        import importlib.util
+        pil_spec = importlib.util.find_spec("PIL")
+        if pil_spec:
+            _diagnostics.append(f"PIL module found at: {pil_spec.origin}")
+        else:
+            _diagnostics.append("PIL module NOT found in any sys.path")
+            _diagnostics.append(f"sys.path entries: {sys.path[:5]}")
+    except Exception as diag_err:
+        _diagnostics.append(f"Diagnosis failed: {diag_err}")
+
+# Write diagnostics to file - use project root for visibility
+try:
+    from pathlib import Path
+    diag_file = Path(__file__).parent.parent.parent / "PIL_ERROR_LOG.txt"
+    with open(diag_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(_diagnostics))
+        if _pil_error_details:
+            f.write(f"\n\nDETAILED ERROR:\n{_pil_error_details}")
+except Exception as write_err:
+    pass
+
+# Print status immediately at module load
+print(_pil_msg)
+print(f"[DEBUG] Python: {sys.executable}")
+print(f"[DEBUG] sys.path[0]: {sys.path[0] if sys.path else 'EMPTY'}")
+print(f"[DEBUG] Working dir: {os.getcwd()}")
+if not HAS_PIL:
+    print(f"[DEBUG] **CRITICAL: PIL IMPORT FAILED - Check PIL_ERROR_LOG.txt for details**")
 
 # Try relative import first (when imported as module), fall back to absolute import (when run as script)
 try:
@@ -308,12 +405,33 @@ class ConfigEditor(tk.Frame):
 
     def _load_preview_images(self) -> None:
         """Load and display preview images from configured paths."""
+        # DEBUGGING: Write current state to file
+        try:
+            diag_file = Path(__file__).parent.parent.parent / "PIL_ERROR_LOG.txt"
+            with open(diag_file, "a", encoding="utf-8") as f:
+                f.write(f"\n\n[PREVIEW_LOAD_CALLED] HAS_PIL={HAS_PIL}, time={__import__('datetime').datetime.now()}\n")
+        except:
+            pass
+        
         if not HAS_PIL:
+            msg = "[Preview] PIL not available - preview images cannot be displayed"
+            self._append_output(f"{msg}\n")
+            print(msg)
             return  # PIL not available, skip preview loading
         
         try:
             self._append_output("[Preview] Loading images...\n")
             config = self.config
+            self._append_output(f"[Preview] Config object type: {type(config)}\n")
+            
+            # Log current config values
+            try:
+                src_path_cfg = config.get("general", "src_path")
+                des_path_cfg = config.get("general", "des_path")
+                template_cfg = config.get("template", "filename")
+                self._append_output(f"[Preview] Config values: src={src_path_cfg}, des={des_path_cfg}, template={template_cfg}\n")
+            except:
+                pass
             
             # Clear all preview images first to remove old cached images
             self._clear_preview_images()
@@ -336,33 +454,86 @@ class ConfigEditor(tk.Frame):
                 if p.exists():
                     return p
                 
+                # Try 4: Check parent directory - sometimes subdirs don't have images but parent does
+                parent_path = PROJECT_ROOT / Path(config_path_str).parent
+                if parent_path.exists():
+                    return parent_path
+                
                 return None
             
             # Load template image
             template_path_str = config.get("template", "filename")
+            self._append_output(f"[Preview] Template config: {template_path_str}\n")
             template_path = find_path(template_path_str)
             if template_path:
+                self._append_output(f"[Preview] Template found: {template_path}\n")
                 self._display_image("template", str(template_path))
+            else:
+                self._append_output(f"[Preview] Template not found: {template_path_str}\n")
             
             # Load first image from source directory
             src_path_str = config.get("general", "src_path")
+            self._append_output(f"[Preview] Source config: {src_path_str}\n")
             src_path = find_path(src_path_str)
             if src_path:
-                image_files = sorted([f for f in src_path.glob("*") if f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp', '.webp']])
+                # Search recursively for images (including subdirectories like src_img/)
+                image_files = sorted([f for f in src_path.rglob("*") if f.is_file() and f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp', '.webp']])
+                self._append_output(f"[Preview] Source path: {src_path}, files found: {len(image_files)}\n")
+                
+                # If no images in source, check temp folder as fallback
+                if not image_files:
+                    temp_path = PROJECT_ROOT / "images/temp"
+                    if temp_path.exists():
+                        image_files = sorted([f for f in temp_path.rglob("*") if f.is_file() and f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp', '.webp']])
+                        self._append_output(f"[Preview] Source empty, checking temp: {len(image_files)} files\n")
+                        if image_files:
+                            self._append_output(f"[Preview] Using temp folder for source preview\n")
+                            src_path = temp_path
+                
                 if image_files:
+                    try:
+                        self._append_output(f"[Preview] Displaying source: {image_files[0].name}\n")
+                    except UnicodeEncodeError:
+                        self._append_output(f"[Preview] Displaying source image\n")
                     self._display_image("source", str(image_files[0]))
+                else:
+                    self._append_output(f"[Preview] No images found in source or temp\n")
+            else:
+                self._append_output(f"[Preview] Source path not found: {src_path_str}\n")
             
             # Load first image from output directory
             output_path_str = config.get("general", "des_path")
+            self._append_output(f"[Preview] Output config: {output_path_str}\n")
             output_path = find_path(output_path_str)
             if output_path:
-                image_files = sorted([f for f in output_path.glob("*") if f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp', '.webp']])
+                # Search recursively for images (including subdirectories)
+                image_files = sorted([f for f in output_path.rglob("*") if f.is_file() and f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp', '.webp']])
+                self._append_output(f"[Preview] Output path: {output_path}, files found: {len(image_files)}\n")
                 if image_files:
+                    try:
+                        self._append_output(f"[Preview] Displaying output: {image_files[0].name}\n")
+                    except UnicodeEncodeError:
+                        self._append_output(f"[Preview] Displaying output image\n")
                     self._display_image("output", str(image_files[0]))
+                else:
+                    # Fallback: if no output images, use source image as placeholder
+                    if src_path:
+                        src_files = sorted([f for f in src_path.rglob("*") if f.is_file() and f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.bmp', '.webp']])
+                        if src_files:
+                            self._display_image("output", str(src_files[0]))
+                            self._append_output(f"[Preview] Output empty, showing source as placeholder\n")
+                        else:
+                            self._append_output(f"[Preview] No images in output: {output_path}\n")
+                    else:
+                        self._append_output(f"[Preview] No images in output: {output_path}\n")
+            else:
+                self._append_output(f"[Preview] Output path not found: {output_path_str}\n")
             self._append_output("[Preview] Images loaded successfully\n")
         except Exception as e:
             # Log the error
+            import traceback
             self._append_output(f"[Preview] Error loading images: {e}\n")
+            self._append_output(f"[Preview] Traceback: {traceback.format_exc()}\n")
 
     def _clear_preview_images(self) -> None:
         """Clear all preview images and reset to placeholders."""
@@ -388,22 +559,35 @@ class ConfigEditor(tk.Frame):
         """
         try:
             if preview_type not in self.preview_images:
+                self._append_output(f"[Preview] WARNING: preview_type '{preview_type}' not in {list(self.preview_images.keys())}\n")
                 return
             
+            self._append_output(f"[Preview] Opening image: {image_path}\n")
             # Load and resize image
             img = Image.open(image_path)
+            self._append_output(f"[Preview] Image loaded: {img.size}, mode: {img.mode}\n")
             img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
             
             # Convert to PhotoImage
             photo = ImageTk.PhotoImage(img)
+            self._append_output(f"[Preview] PhotoImage created: {photo.width()}x{photo.height()}\n")
             
             # Update label
             label = self.preview_images[preview_type]
             label.config(image=photo, text="")
             label.image = photo  # Keep reference to prevent garbage collection
+            self._append_output(f"[Preview] Label updated: {preview_type}\n")
         except Exception as e:
-            # Keep placeholder if error
-            pass
+            # Log the error
+            import traceback
+            try:
+                error_msg = f"[Preview] Error displaying image: {e}\n"
+                self._append_output(error_msg)
+                tb_msg = f"[Preview] Traceback: {traceback.format_exc()}\n"
+                self._append_output(tb_msg)
+            except UnicodeEncodeError:
+                # If Unicode encoding fails (Vietnamese filenames), just log generic message
+                self._append_output(f"[Preview] Error displaying image (Unicode filename issue)\n")
 
     def _get_friendly_label(self, key: str, section: str = '') -> str:
         """
@@ -601,6 +785,9 @@ class ConfigEditor(tk.Frame):
         if path:
             self.dict_val[key][0].config(text=path)
             self.dict_val[key][1] = path
+            
+            # Save the new config value to file so _load_preview_images can read it
+            self._save_config(show_message=False)
 
     def _select_file(self, key: str) -> None:
         """Open file selection dialog."""
@@ -615,6 +802,9 @@ class ConfigEditor(tk.Frame):
         if path:
             self.dict_val[key][0].config(text=path)
             self.dict_val[key][1] = path
+            
+            # Save the new config value to file so _load_preview_images can read it
+            self._save_config(show_message=False)
 
     def _on_config_change(self, field_key: str) -> None:
         """Handle config changes from widgets (e.g., checkbox toggle).
@@ -661,6 +851,9 @@ class ConfigEditor(tk.Frame):
             hex_color = color_tuple[1]
             self.dict_val[key][0].config(text=hex_color)
             self.dict_val[key][1] = hex_color
+            
+            # Save the new config value to file
+            self._save_config(show_message=False)
 
     def _save_config(self, show_message: bool = True) -> None:
         """Save configuration to file.
@@ -695,6 +888,8 @@ class ConfigEditor(tk.Frame):
             self.config.write(f)
         
         # Reload config from file to ensure in-memory config is up-to-date
+        import time
+        time.sleep(0.1)  # Small delay to ensure file is flushed
         self.config.read(CONFIG_FILE)
 
         if show_message and self._get_show_success():
@@ -713,6 +908,10 @@ class ConfigEditor(tk.Frame):
         else:
             # Log to terminal instead of showing messagebox
             self._append_output("Configuration saved successfully!\n")
+            # Refresh preview images after config save (thread-safe)
+            self._refresh_preview()
+            # Refresh preview images after config save (thread-safe)
+            self._refresh_preview()
 
     def _execute(self) -> None:
         """Execute badge generation in background thread."""
@@ -741,19 +940,29 @@ class ConfigEditor(tk.Frame):
             if not execute_py.exists():
                 raise FileNotFoundError(f"execute.py not found at {execute_py}")
 
-            # Find the correct Python executable - project level venv PREFERRED
+            # Use current Python interpreter (already in the correct environment)
+            # This is more reliable than trying to find venv paths
             python_exe = sys.executable
+            
+            # Try to find venv Python as fallback for better isolation
+            # Check both project level and workspace level
             venv_paths = [
-                project_root / '.venv' / 'Scripts' / 'python.exe',         # Project level (PREFERRED - has packages)
-                project_root.parent / '.venv' / 'Scripts' / 'python.exe',  # Workspace level
-                project_root.parent / 'venv' / 'Scripts' / 'python.exe',
+                project_root / '.venv' / 'Scripts' / 'python.exe',         # Project level venv
+                project_root.parent / '.venv' / 'Scripts' / 'python.exe',  # Workspace level venv
+                project_root.parent / 'venv' / 'Scripts' / 'python.exe',   # Alt Windows venv
             ]
-            for venv_python in venv_paths:
-                if venv_python.exists():
-                    python_exe = str(venv_python.resolve())
-                    break
+            
+            for venv_path in venv_paths:
+                try:
+                    # Verify venv is valid by checking pyvenv.cfg exists
+                    venv_root = venv_path.parent.parent
+                    if (venv_root / 'pyvenv.cfg').exists():
+                        python_exe = str(venv_path.resolve())
+                        break
+                except Exception:
+                    continue
 
-            # Run badge generation with venv Python
+            # Run badge generation with Python
             # Windows: suppress console window with CREATE_NO_WINDOW flag
             kwargs = {'cwd': project_root}
             if hasattr(subprocess, 'CREATE_NO_WINDOW'):
@@ -827,19 +1036,29 @@ class ConfigEditor(tk.Frame):
             if not execute_py.exists():
                 raise FileNotFoundError(f"execute.py not found at {execute_py}")
 
-            # Find the correct Python executable - project level venv PREFERRED
+            # Use current Python interpreter (already in the correct environment)
+            # This is more reliable than trying to find venv paths
             python_exe = sys.executable
+            
+            # Try to find venv Python as fallback for better isolation
+            # Check both project level and workspace level
             venv_paths = [
-                project_root / '.venv' / 'Scripts' / 'python.exe',         # Project level (PREFERRED - has packages)
-                project_root.parent / '.venv' / 'Scripts' / 'python.exe',  # Workspace level
-                project_root.parent / 'venv' / 'Scripts' / 'python.exe',
+                project_root / '.venv' / 'Scripts' / 'python.exe',         # Project level venv
+                project_root.parent / '.venv' / 'Scripts' / 'python.exe',  # Workspace level venv
+                project_root.parent / 'venv' / 'Scripts' / 'python.exe',   # Alt Windows venv
             ]
-            for venv_python in venv_paths:
-                if venv_python.exists():
-                    python_exe = str(venv_python.resolve())
-                    break
+            
+            for venv_path in venv_paths:
+                try:
+                    # Verify venv is valid by checking pyvenv.cfg exists
+                    venv_root = venv_path.parent.parent
+                    if (venv_root / 'pyvenv.cfg').exists():
+                        python_exe = str(venv_path.resolve())
+                        break
+                except Exception:
+                    continue
 
-            # Run cleanup subcommand with venv Python
+            # Run cleanup subcommand with Python
             # Windows: suppress console window with CREATE_NO_WINDOW flag
             kwargs = {'cwd': project_root}
             if hasattr(subprocess, 'CREATE_NO_WINDOW'):
@@ -888,6 +1107,9 @@ class ConfigEditor(tk.Frame):
             self.pb.stop()
             # Refresh preview images (thread-safe)
             self._refresh_preview()
+            self.pb.stop()
+            # Refresh preview images (thread-safe)
+            self._refresh_preview()
 
     def _crawl_images(self) -> None:
         """Execute image crawling in background thread."""
@@ -918,24 +1140,30 @@ class ConfigEditor(tk.Frame):
             # Use the project-level venv (has packages)
             python_exe = None
             
-            # Check for venv Python executables (Windows) - project level first (PREFERRED)
+            # Use current Python interpreter (already in the correct environment)
+            # This is more reliable than trying to find venv paths
+            python_exe = sys.executable
+            
+            # Try to find venv Python as fallback for better isolation
+            # Check both project level and workspace level
             venv_paths = [
-                project_root / '.venv' / 'Scripts' / 'python.exe',         # Project level venv (PREFERRED - has packages)
+                project_root / '.venv' / 'Scripts' / 'python.exe',         # Project level venv
                 project_root.parent / '.venv' / 'Scripts' / 'python.exe',  # Workspace level venv
                 project_root.parent / 'venv' / 'Scripts' / 'python.exe',   # Alt Windows venv
             ]
             
             for venv_path in venv_paths:
-                if venv_path.exists():
-                    python_exe = str(venv_path.resolve())
-                    break
+                try:
+                    # Verify venv is valid by checking pyvenv.cfg exists
+                    venv_root = venv_path.parent.parent
+                    if (venv_root / 'pyvenv.cfg').exists():
+                        python_exe = str(venv_path.resolve())
+                        break
+                except Exception:
+                    continue
             
-            # Fallback to sys.executable only if no venv found
-            if not python_exe:
-                python_exe = sys.executable
-
             # Run image crawler as a module (allows relative imports to work)
-            # Use the venv Python to ensure all packages are available
+            # Use the Python interpreter to ensure all packages are available
             # Windows: suppress console window with CREATE_NO_WINDOW flag
             kwargs = {'cwd': project_root}
             if hasattr(subprocess, 'CREATE_NO_WINDOW'):

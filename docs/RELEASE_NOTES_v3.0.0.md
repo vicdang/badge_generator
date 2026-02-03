@@ -62,7 +62,7 @@ Configuration Editor          Preview Panel              Terminal Output
 
 **Clean Repository Structure:**
 ```
-✅ Root level: Clean (only badge_generator/ folder)
+✅ Root level: Clean (only badgenerator/ folder)
 ✅ Docs folder: 21 professional documentation files
 ✅ Removed: __pycache__, log files, build artifacts
 ✅ Kept: .github/ for CI/CD workflows
@@ -234,7 +234,7 @@ Status: PRODUCTION READY
 ```bash
 # Clone repository
 git clone <repo-url>
-cd badge_generator
+cd badgenerator
 
 # Create virtual environment
 python -m venv .venv

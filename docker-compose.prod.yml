@@ -1,0 +1,31 @@
+# Docker Compose for Production
+# Use: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  badge-generator:
+    # Production settings - optimized for stability
+    restart: always
+    
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONIOENCODING: "utf-8"
+      BADGE_ENV: "production"
+      DEBUG: "false"
+    
+    # More aggressive health checks in production
+    healthcheck:
+      start_period: 30s
+      interval: 120s
+      retries: 5
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G

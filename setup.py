@@ -55,7 +55,7 @@ setup(
     
     entry_points={
         "console_scripts": [
-            "badge-generator=src.badge_generator:main",
+            "badge-generator=src.badgenerator:main",
             "badge-gui=src.badge_gui:main",
         ],
     },

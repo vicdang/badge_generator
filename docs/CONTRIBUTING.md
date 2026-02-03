@@ -29,7 +29,7 @@ Please be respectful and constructive in all interactions within this project.
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/vicdang/badge-generator.git
-   cd badge_generator
+   cd badgenerator
    ```
 
 2. **Create a virtual environment:**
@@ -156,7 +156,7 @@ def generate_badge(user_info: Dict[str, str], output_path: str) -> bool:
 Project structure:
 ```
 src/                    # Main application code
-├── badge_generator.py  # CLI entry point
+├── badgenerator.py  # CLI entry point
 ├── badge_gui.py        # GUI entry point
 ├── config.py          # Configuration management
 └── core/              # Core functionality
@@ -202,7 +202,7 @@ Example test structure:
 
 ```python
 import pytest
-from src.badge_generator import BadgeGenerator
+from src.badgenerator import BadgeGenerator
 
 class TestBadgeGenerator:
     """Tests for BadgeGenerator class."""
@@ -260,7 +260,7 @@ Documentation files are in the `docs/` directory:
 ## Example Usage
 
 \`\`\`python
-from src.badge_generator import generate_badge
+from src.badgenerator import generate_badge
 
 user_info = {
     'name': 'John Doe',
