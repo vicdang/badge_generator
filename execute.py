@@ -22,10 +22,25 @@ from pathlib import Path
 # Add current directory to path to import tools package
 sys.path.insert(0, str(Path(__file__).parent))
 
-import cv2
-import numpy as np
-import qrcode
-from PIL import Image, ImageDraw, ImageFont
+# Conditional imports - only load cv2/numpy if needed (not needed for cleanup)
+try:
+    import cv2
+    import numpy as np
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
+
+try:
+    import qrcode
+    HAS_QRCODE = True
+except ImportError:
+    HAS_QRCODE = False
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 from tools.util import Utilities as uT
 
@@ -82,6 +97,9 @@ class Utility(object):
       :param input_img: input image
       :return: converted image
       """
+      if not HAS_CV2:
+         logger.error("cv2 not available - cannot convert image")
+         return None
       return cv2.imdecode(np.fromfile(input_img, dtype=np.uint8), -1)
 
    @staticmethod
@@ -115,8 +133,7 @@ class Utility(object):
                os.remove(f)
 
    @staticmethod
-   def resize_with_aspect_ratio(image, width=None, height=None,
-                                inter=cv2.INTER_AREA):
+   def resize_with_aspect_ratio(image, width=None, height=None, inter=None):
       """
       resize_with_aspect_ratio
       :param image:
@@ -125,6 +142,13 @@ class Utility(object):
       :param inter:
       :return:
       """
+      if not HAS_CV2:
+         logger.error("cv2 not available - cannot resize image")
+         return image
+      
+      if inter is None:
+         inter = cv2.INTER_AREA
+      
       (h, w) = image.shape[:2]
       if width is None and height is None:
          return image
@@ -141,10 +165,11 @@ class Utility(object):
 class ImageMaker(object):
    """docstring for ImageMaker"""
 
-   def __init__(self, name, arg, conf):
+   def __init__(self, name, arg, conf, image_full_path=None):
       super(ImageMaker, self).__init__()
       self.arg = arg
       self.name = name
+      self.image_full_path = image_full_path  # Store full path if provided
       self.src_path = str(PROJECT_ROOT / arg.src_path)
       self.des_path = str(PROJECT_ROOT / arg.des_path)
       self.tmp_path = str(PROJECT_ROOT / conf.get("general", "tmp_path"))
@@ -163,7 +188,7 @@ class ImageMaker(object):
       self.re_name = r"^[\w\.\- ]+$"
       self.re_id = r"^[\w]?[\d]+$"
 
-      self.img = self.img_resized = self.img_cropped = self.bg_img = None
+      self.img = self.img_resized = self.img_cropped = self.bg_img = self.qr_img = None
       self.user_pos = self.positions["E"]
       self.user_name = self.user_id = ""
       self.img_num = 1
@@ -174,6 +199,10 @@ class ImageMaker(object):
       :param input_img: The input image
       :return: Focus position of the image (x, y)
       """
+      if not HAS_CV2:
+         logger.warning("cv2 not available, using default focus position (center)")
+         return (0, 0)  # Return center as fallback
+      
       face_cascade = cv2.CascadeClassifier(
             str(PROJECT_ROOT / 'resources' / 'haar_cascade' / 'haarcascade_frontalface_default.xml'))
       image = Utility.convert_img(input_img)
@@ -274,7 +303,7 @@ class ImageMaker(object):
       logger.info(f"Cleaning directory recursively: {clean_full_path}")
       logger.info(f"Protected paths: {skip_paths}")
       
-      # Normalize skip paths to full paths for comparison
+      # Normalize skip paths to full paths for comparison (ensure exact matching, not substring)
       skip_full_paths = [str(PROJECT_ROOT / skip_path).replace('\\', '/').rstrip('/') 
                          for skip_path in skip_paths]
       
@@ -284,12 +313,18 @@ class ImageMaker(object):
          current_path_normalized = root.replace('\\', '/')
          
          # Check if current directory should be skipped
-         should_skip = any(skip_path.rstrip('/') in current_path_normalized or 
-                          current_path_normalized in skip_path.rstrip('/') 
-                          for skip_path in skip_full_paths)
+         # Use exact path matching: either the dir is exactly a skip_path, or it's under a skip_path
+         should_skip = False
+         for skip_path in skip_full_paths:
+            skip_normalized = skip_path.rstrip('/')
+            curr_normalized = current_path_normalized
+            # Exact match or child of skip path (using path separator to avoid substring false positives)
+            if curr_normalized == skip_normalized or curr_normalized.startswith(skip_normalized + '/'):
+               should_skip = True
+               logger.debug(f"Skipping protected directory: {root}")
+               break
          
          if should_skip:
-            logger.debug(f"Skipping protected directory: {root}")
             continue
          
          # Delete files in this directory
@@ -302,18 +337,28 @@ class ImageMaker(object):
             except Exception as e:
                logger.error(f"Failed to delete {file_path}: {e}")
          
-         # Try to remove empty directories (but not skip_paths)
+         # Try to remove empty directories (but not skip_paths and not essential directories like source, output, temp)
+         essential_dirs = ['source', 'output', 'temp', 'templates', 'cv']
          for dir_name in dirs:
             dir_path = os.path.join(root, dir_name)
             dir_path_normalized = dir_path.replace('\\', '/')
             
-            # Check if directory should be skipped
-            should_skip_dir = any(skip_path.rstrip('/') in dir_path_normalized or 
-                                 dir_path_normalized in skip_path.rstrip('/') 
-                                 for skip_path in skip_full_paths)
+            # Never delete essential directories
+            if any(essential in dir_path_normalized for essential in essential_dirs):
+               logger.debug(f"Skipping essential directory: {dir_path}")
+               continue
+            
+            # Check if directory should be skipped (exact path matching)
+            should_skip_dir = False
+            for skip_path in skip_full_paths:
+               skip_normalized = skip_path.rstrip('/')
+               # Exact match or child of skip path (using path separator to avoid substring false positives)
+               if dir_path_normalized == skip_normalized or dir_path_normalized.startswith(skip_normalized + '/'):
+                  should_skip_dir = True
+                  logger.debug(f"Skipping protected directory: {dir_path}")
+                  break
             
             if should_skip_dir:
-               logger.debug(f"Skipping protected directory: {dir_path}")
                continue
             
             try:
@@ -445,31 +490,50 @@ class ImageMaker(object):
       """
       Make QR code
       """
-      # Make RQ code
-      qr = qrcode.QRCode(version=self.conf.getint("qrcode", "version"),
-                         error_correction=qrcode.constants.ERROR_CORRECT_L,
-                         box_size=self.conf.getint("qrcode", "boxsize"),
-                         border=self.conf.getint("qrcode", "border"))
-      name = unicodedata.normalize('NFKD', self.user_name).encode('ascii',
-                                                                  'ignore')
-      img_info = "Fullname: %s,Position: %s, Badge_Id: %s, Company: %s" % (
-         name, self.user_pos, self.user_id, "https://www.tma.vn")
-      logger.info("info: {}".format(img_info))
-      if self.arg.qr_text:
-         qr_img = qrcode.make(self.arg.qr_text)
-      else:
-         qr.add_data(img_info)
-         qr.make(fit=self.conf.get("qrcode", "fit"))
-         qr_img = qr.make_image(fill_color=self.conf.get("qrcode",
-                                                         "fillcolor"),
-                                back_color=self.conf.get("qrcode",
-                                                         "backcolor"))
-      qr_x = self.conf.getint("qrcode", "qr_x")
-      qr_y = self.conf.getint("qrcode", "qr_y")
-      # Convert QR code to RGBA if needed and paste without mask
-      if qr_img.mode != 'RGBA':
-         qr_img = qr_img.convert('RGBA')
-      self.bg_img.paste(qr_img, (qr_x, qr_y))
+      self.qr_img = None  # Initialize
+      
+      if not HAS_QRCODE:
+         logger.warning("qrcode not available, skipping QR code generation")
+         return  # Skip QR code if qrcode module not available
+      
+      try:
+         # Make RQ code
+         qr = qrcode.QRCode(version=self.conf.getint("qrcode", "version"),
+                            error_correction=qrcode.constants.ERROR_CORRECT_L,
+                            box_size=self.conf.getint("qrcode", "boxsize"),
+                            border=self.conf.getint("qrcode", "border"))
+         name = unicodedata.normalize('NFKD', self.user_name).encode('ascii',
+                                                                     'ignore')
+         img_info = "Fullname: %s,Position: %s, Badge_Id: %s, Company: %s" % (
+            name, self.user_pos, self.user_id, "https://www.tma.vn")
+         logger.info("info: {}".format(img_info))
+         if self.arg.qr_text:
+            self.qr_img = qrcode.make(self.arg.qr_text)
+         else:
+            qr.add_data(img_info)
+            qr.make(fit=self.conf.get("qrcode", "fit"))
+            self.qr_img = qr.make_image(fill_color=self.conf.get("qrcode",
+                                                            "fillcolor"),
+                                 back_color=self.conf.get("qrcode",
+                                                            "backcolor"))
+         
+         # Ensure QR image is in RGBA format for consistent pasting
+         if self.qr_img and self.qr_img.mode != 'RGBA':
+            self.qr_img = self.qr_img.convert('RGBA')
+         
+         qr_x = self.conf.getint("qrcode", "qr_x")
+         qr_y = self.conf.getint("qrcode", "qr_y")
+         qr_w = self.conf.getint("qrcode", "qr_w")
+         qr_h = self.conf.getint("qrcode", "qr_h")
+         
+         if self.qr_img:
+            # Resize QR code to fit the specified dimensions
+            qr_resized = self.qr_img.resize((qr_w, qr_h), Image.Resampling.LANCZOS)
+            # Use 4-tuple bounding box (left, top, right, bottom) for paste
+            self.bg_img.paste(qr_resized, (qr_x, qr_y, qr_x + qr_w, qr_y + qr_h), qr_resized)
+      except Exception as e:
+         logger.error("QR code generation failed: {}".format(str(e)))
+         self.qr_img = None  # Ensure qr_img is None on error
 
    def execute(self):
       """
@@ -484,8 +548,13 @@ class ImageMaker(object):
          template_img = Image.open(self.template, 'r')
          tpl_w, tpl_h = template_img.size
 
-         self.img = Image.open(os.path.join(self.src_path, self.name), 'r').convert(
-               "RGBA")
+         # Use the full path if provided (for images in subdirectories), else construct from src_path + name
+         if self.image_full_path:
+            image_path = self.image_full_path
+         else:
+            image_path = os.path.join(self.src_path, self.name)
+         
+         self.img = Image.open(image_path, 'r').convert("RGBA")
          curr_y = 0.0
          self.correct_img()
          self.resize_img()
@@ -719,13 +788,13 @@ def main(args, config):
    
    # Discover available images in source folder
    available_images = {}
+   files = []
    for root, dirs, file_list in os.walk(src_path):
       for file in file_list:
          if any(s for s in format_list if s in file):
+            full_path = os.path.join(root, file)
             files.append(file)
-            # Try to extract employee ID from filename
-            # Expected format: Name_EmployeeID_Position or similar
-            available_images[file] = os.path.join(root, file)
+            available_images[file] = full_path
    
    logger.debug("Available images: %s" % [item for item in files])
    
@@ -750,11 +819,14 @@ def main(args, config):
             crawler.download_batch(missing_ids, src_path)
             
             # Re-discover available images after crawling
+            available_images = {}
             files = []
             for root, dirs, file_list in os.walk(src_path):
                for file in file_list:
                   if any(s for s in format_list if s in file):
+                     full_path = os.path.join(root, file)
                      files.append(file)
+                     available_images[file] = full_path
             logger.info(f"After crawling: {len(files)} images available")
          else:
             logger.info("All employees have images")
@@ -771,20 +843,35 @@ def main(args, config):
       src_path = cv_path
       
       # Re-discover available images after conversion, but only PNG files
+      available_images = {}
       files = []
       for root, dirs, file_list in os.walk(src_path):
          for file in file_list:
             if file.lower().endswith('.png'):
+               full_path = os.path.join(root, file)
                files.append(file)
+               available_images[file] = full_path
       logger.info(f"After conversion: {len(files)} PNG images available")
-
+   
    count = 0
    while True:
       start = time.time()
       for file_name in files:
          count += 1
+         # Get full path from available_images dict
+         full_path = available_images.get(file_name)
+         if not full_path:
+            # Fallback: search for the file in subdirectories
+            for root, dirs, file_list in os.walk(src_path):
+               if file_name in file_list:
+                  full_path = os.path.join(root, file_name)
+                  break
+         if not full_path:
+            # Last resort: try direct path (for backward compatibility)
+            full_path = os.path.join(src_path, file_name)
+         
          logger.info("Executing: %s" % file_name)
-         img_maker = ImageMaker(file_name, args, config)
+         img_maker = ImageMaker(file_name, args, config, image_full_path=full_path)
          img_maker.execute()
       end = time.time()
       logger.info("Generated [" + str(count) + " items] in [" + str(end -

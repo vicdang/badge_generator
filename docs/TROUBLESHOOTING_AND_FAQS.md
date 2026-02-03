@@ -159,8 +159,8 @@ ModuleNotFoundError: No module named 'src'
 
 4. **Run from correct directory**:
    ```bash
-   cd badge_generator  # Project root
-   python src/badge_generator.py
+   cd badgenerator  # Project root
+   python src/badgenerator.py
    ```
 
 ### Issue: ImportError with PIL
@@ -270,7 +270,7 @@ This is usually fixed in v2.0, but if it occurs:
 pip install --force-reinstall --no-cache-dir Pillow
 
 # Update code to use alpha_composite
-# See: src/badge_generator.py for correct implementation
+# See: src/badgenerator.py for correct implementation
 ```
 
 ### Issue: Face Detection Not Working
@@ -695,7 +695,7 @@ root.mainloop()
 **A**: 
 ```bash
 # CLI
-python src/badge_generator.py exec
+python src/badgenerator.py exec
 
 # GUI
 python src/badge_gui.py
@@ -776,7 +776,7 @@ python src/badge_gui.py
 #### Q: Can I use this in my script?
 **A**: Yes! Import modules:
 ```python
-from src.badge_generator import BadgeGenerator
+from src.badgenerator import BadgeGenerator
 gen = BadgeGenerator()
 result = gen.generate_badge(user_info, output)
 ```
@@ -859,7 +859,7 @@ def check_imports():
 
 def check_files():
     required = [
-        'src/badge_generator.py',
+        'src/badgenerator.py',
         'src/badge_gui.py',
         'config/config.ini',
         'resources/haar_cascade/haarcascade_frontalface_default.xml'

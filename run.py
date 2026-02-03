@@ -11,30 +11,33 @@ Usage:
 """
 
 import sys
-import subprocess
+import os
 from pathlib import Path
 
 def main():
     """Launch the Badge Generator GUI."""
-    # Get the directory where this script is located (badge_generator folder)
+    # Get the directory where this script is located (badgenerator folder)
     script_dir = Path(__file__).parent.resolve()
-    gui_script = script_dir / 'src' / 'badge_gui.py'
     
-    # Verify the GUI script exists
-    if not gui_script.exists():
-        print(f"Error: Could not find badge_gui.py at {gui_script}")
-        print("Please ensure the badge_generator package is properly installed.")
-        sys.exit(1)
-    
-    # Change to the badge_generator directory
-    import os
+    # Change to the badgenerator directory
     os.chdir(script_dir)
     
-    # Launch the GUI
+    # Add the script directory to Python path to ensure proper imports
+    if str(script_dir) not in sys.path:
+        sys.path.insert(0, str(script_dir))
+    
+    # Import and launch the GUI directly (same Python process, same environment)
     try:
-        subprocess.run([sys.executable, str(gui_script)], check=False)
+        from src.badge_gui import main as gui_main
+        gui_main()
+    except ImportError as e:
+        print(f"Error importing GUI module: {e}")
+        print("Please ensure all dependencies are installed.")
+        sys.exit(1)
     except Exception as e:
         print(f"Error launching GUI: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == '__main__':

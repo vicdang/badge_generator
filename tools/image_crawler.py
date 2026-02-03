@@ -305,6 +305,10 @@ def get_data_from_file(file_path: str) -> List[str]:
 
     Returns:
         List of employee IDs.
+        
+    Raises:
+        ImportError: If required module is not installed.
+        FileNotFoundError: If data file not found.
     """
     data: List[str] = []
     file_type = ut.check_file_type(file_path)
@@ -325,52 +329,85 @@ def get_data_from_file(file_path: str) -> List[str]:
                     uid, name, pos = row[1], row[2], row[3]
                     emp_id = f"{name}_{uid}_{pos}"
                     data.append(emp_id)
+        except ImportError as err:
+            logger.error(f"Missing required module for Excel files: {err}")
+            logger.error("Install openpyxl: pip install openpyxl")
+            raise
+        except FileNotFoundError:
+            logger.error(f"Data file not found: {file_path}")
+            raise
         except Exception as err:
             logger.error(f"Error reading Excel file: {err}")
+            raise
     
     elif file_type == "txt":
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = [line.strip() for line in f if line.strip()]
+        except FileNotFoundError:
+            logger.error(f"Data file not found: {file_path}")
+            raise
         except Exception as err:
             logger.error(f"Error reading text file: {err}")
+            raise
     
     return data
 
 
 def main() -> None:
     """Main execution function."""
-    args = parse_arguments()
-    setup_logging(args.debug)
-    
-    logger.info(f"Image Crawler Started")
-    logger.info(f"Workers: {args.workers}, Timeout: {args.timeout}s")
-    
-    # Get employee IDs from file
-    emp_ids = get_data_from_file(args.file_path)
-    
-    if not emp_ids:
-        logger.warning(f"No employee IDs found in {args.file_path}")
-        return
-    
-    logger.info(f"Found {len(emp_ids)} employee IDs to process")
-    
-    # Download images
-    crawler = ImageCrawler(
-        workers=args.workers,
-        base_url=args.url,
-        timeout=args.timeout
-    )
-    
-    stats = crawler.download_batch(emp_ids, args.output)
-    
-    logger.info(f"\n=== Download Summary ===")
-    logger.info(f"Total: {stats['total']}")
-    logger.info(f"Successful: {stats['successful']}")
-    logger.info(f"Failed: {stats['failed']}")
-    
-    if stats['failed_ids']:
-        logger.warning(f"Failed IDs: {stats['failed_ids']}")
+    try:
+        args = parse_arguments()
+        setup_logging(args.debug)
+        
+        logger.info(f"Image Crawler Started")
+        logger.info(f"Workers: {args.workers}, Timeout: {args.timeout}s")
+        
+        # Get employee IDs from file
+        try:
+            emp_ids = get_data_from_file(args.file_path)
+        except Exception as err:
+            logger.error(f"Fatal error reading data file: {err}")
+            sys.exit(1)
+        
+        if not emp_ids:
+            logger.warning(f"No employee IDs found in {args.file_path}")
+            sys.exit(1)
+        
+        logger.info(f"Found {len(emp_ids)} employee IDs to process")
+        
+        # Download images
+        try:
+            crawler = ImageCrawler(
+                workers=args.workers,
+                base_url=args.url,
+                timeout=args.timeout
+            )
+            
+            stats = crawler.download_batch(emp_ids, args.output)
+            
+            logger.info(f"\n=== Download Summary ===")
+            logger.info(f"Total: {stats['total']}")
+            logger.info(f"Successful: {stats['successful']}")
+            logger.info(f"Failed: {stats['failed']}")
+            
+            if stats['failed_ids']:
+                logger.warning(f"Failed IDs: {stats['failed_ids']}")
+                
+            # Exit with 0 if at least some downloads succeeded
+            if stats['successful'] > 0:
+                sys.exit(0)
+            else:
+                logger.error("No images were successfully downloaded")
+                sys.exit(1)
+                
+        except Exception as err:
+            logger.error(f"Error during image download: {err}", exc_info=True)
+            sys.exit(1)
+            
+    except Exception as err:
+        logger.error(f"Fatal error in image crawler: {err}", exc_info=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

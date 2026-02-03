@@ -4,8 +4,8 @@
 
 ### **Step 1: Navigate to Badge Generator folder**
 ```bash
-# Navigate into the badge_generator directory
-cd badge_generator
+# Navigate into the badgenerator directory
+cd badgenerator
 ```
 
 ### **Step 2: Launch the GUI**

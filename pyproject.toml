@@ -72,7 +72,7 @@ Repository = "https://github.com/vicdang/badge-generator"
 "Bug Tracker" = "https://github.com/vicdang/badge-generator/issues"
 
 [project.scripts]
-badge-generator = "src.badge_generator:main"
+badge-generator = "src.badgenerator:main"
 badge-gui = "src.badge_gui:main"
 
 [tool.setuptools]

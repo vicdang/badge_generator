@@ -43,7 +43,7 @@ Hướng dẫn toàn diện dành cho các nhà phát triển Badge Generator.
 
 ```bash
 git clone https://github.com/vicdang/badge-generator.git
-cd badge_generator
+cd badgenerator
 ```
 
 #### 2. Create Virtual Environment
@@ -78,7 +78,7 @@ pip install -e ".[gui]"
 
 ```bash
 # Check main imports
-python -c "import src.badge_generator; print('✓ Main module OK')"
+python -c "import src.badgenerator; print('✓ Main module OK')"
 python -c "import src.badge_gui; print('✓ GUI module OK')"
 python -c "import tools.image_manager; print('✓ Tools OK')"
 
@@ -99,7 +99,7 @@ black src/ tools/ tests/
 black --check src/
 
 # Format specific file
-black src/badge_generator.py
+black src/badgenerator.py
 ```
 
 #### Linting
@@ -152,14 +152,14 @@ pytest tests/ -v
 
 ```bash
 # Basic badge generation
-python -m src.badge_generator exec
+python -m src.badgenerator exec
 
 # With options
-python -m src.badge_generator exec --check-path
-python -m src.badge_generator exec --enable-crawler
+python -m src.badgenerator exec --check-path
+python -m src.badgenerator exec --enable-crawler
 
 # Get help
-python -m src.badge_generator --help
+python -m src.badgenerator --help
 ```
 
 #### GUI Application
@@ -369,7 +369,7 @@ class BadgeGenerator:
 class image_processor:
     pass
 
-class badge_generator:
+class badgenerator:
     pass
 ```
 

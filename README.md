@@ -55,11 +55,13 @@ badgenerator/                    (Root project folder - git root)
 │   └── positions.json
 │
 ├── images/                         Image folders
-│   ├── source/src_img/             🔒 Original images
+│   ├── source/                     🔒 Original images
 │   ├── output/                     Generated badges
 │   ├── templates/                  🔒 Templates
 │   └── temp/                       Temporary files
 │
+├── docs/                           📚 Documentation (22+ guides)
+└── tests/                          🧪 Test suite (33 tests)
 ├── resources/                      Resources
 │   ├── fonts/
 │   └── haar_cascade/

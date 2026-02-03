@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  badge-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: badge-generator-app
+    volumes:
+      - ./images:/app/images
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./tools:/app/tools
+      - ./resources:/app/resources
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONIOENCODING: "utf-8"
+    # ports:
+    #   - "8000:8000"  # Uncomment if REST API is added
+    healthcheck:
+      test: ["CMD", "python", "-c", "from src.badge_gui import *; print('OK')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - badge-network
+
+  # Optional: Add nginx for reverse proxy if REST API is added
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   networks:
+  #     - badge-network
+  #   depends_on:
+  #     - badge-generator
+
+networks:
+  badge-network:
+    driver: bridge
+
+volumes:
+  badge-data:
+    driver: local
