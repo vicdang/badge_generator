@@ -1,33 +1,9 @@
-# ***Image Producer***
+# ***Badge Generator***
 Badge Generator Tool - Automatically generate ID badges with face detection and QR codes
 
 **Version:** 3.0.0 | **Status:** Production Ready | **Python:** 3.8+ | **License:** See LICENSE file
 
----
-
-## ✨ What's New in v3.0.0
-
-### 🎯 Major Features
-- **Live Preview Panel** - Real-time visual feedback for template, source, and generated images
-- **Auto-Refresh** - Automatic preview updates on all operations (Generate, Cleanup, Pull Image, Save Config)
-- **Async Image Downloader** - 5x faster downloads with multi-threaded support
-- **Database Integration** - SQLite backend for persistent data storage and job tracking
-- **Enhanced Architecture** - New services layer, validators, and dependency injection
-- **Production-Ready Services** - Database, logging, and configuration management modules
-
-### 🐛 Bug Fixes
-- **Error 106 Fix** - Improved image crawler error handling with proper exit codes
-- **pyvenv.cfg Fix** - Better virtual environment detection for subprocess calls
-- **Config Path Fix** - Updated directory paths for images (source → images/source/)
-
-### 📊 Improvements
-- 87%+ code coverage (core modules)
-- Structured JSON logging with rotation
-- 33/33 unit tests passing
-- Type hints and documentation for all new modules
-- Comprehensive documentation (22+ guides)
-
----
+<img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/a909615e-dcb8-4a9d-8220-442fb5e42fee" />
 
 ## ***General Information***
 ### Supporting Features
@@ -65,13 +41,8 @@ badgenerator/                    (Root project folder - git root)
 │
 ├── src/                            Source code
 │   ├── badge_gui.py                ⭐ GUI application
-│   ├── config_manager.py           ✨ NEW - Configuration management
-│   ├── utilities.py                ✨ NEW - Utility functions
-│   ├── validators.py               ✨ NEW - Input validation
-│   ├── services.py                 ✨ NEW - Business logic
-│   ├── database.py                 ✨ NEW - SQLite backend
-│   ├── logging_config.py           ✨ NEW - JSON logging
-│   ├── async_downloader.py         ✨ NEW - Async downloads
+│   ├── config.py                   Centralized configuration
+│   ├── badgenerator.py
 │   └── core/
 │
 ├── tools/                          Utility modules
