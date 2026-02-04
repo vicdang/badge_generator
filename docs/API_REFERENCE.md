@@ -361,7 +361,7 @@ class ImageManager:
 
 ## tools.image_crawler
 
-Multi-threaded image downloading from TMA intranet.
+Multi-threaded image downloading from trna intranet.
 
 **Location:** `tools/image_crawler.py`
 
@@ -369,7 +369,7 @@ Multi-threaded image downloading from TMA intranet.
 
 ```python
 class ImageCrawler:
-    """Download images from TMA intranet with multi-threading."""
+    """Download images from trna intranet with multi-threading."""
     
     def __init__(
         self,
@@ -541,7 +541,7 @@ font_size = 20
 
 [crawler]
 enable_crawler = false
-base_url = https://intranet.tma.com.vn/images/emp_images/big_new
+base_url = https://intranet.trna.com.vn/images/emp_images/big_new
 workers = 5
 timeout = 30
 format = .webp

@@ -41,7 +41,7 @@ class ImageCrawler:
     def __init__(
         self,
         workers: int = 10,
-        base_url: str = "https://intranet.tma.com.vn/images/emp_images/big_new",
+        base_url: str = "https://intranet.trna.com.vn/images/emp_images/big_new",
         file_type: int = 0,
         timeout: int = 30
     ) -> None:
@@ -272,7 +272,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '-u', '--url',
         type=str,
-        default="https://intranet.tma.com.vn/images/emp_images/big_new",
+        default="https://intranet.trna.com.vn/images/emp_images/big_new",
         help='Base URL for downloading images'
     )
     parser.add_argument(

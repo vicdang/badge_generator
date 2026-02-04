@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Test script for image crawler with TMA URL."""
+"""Test script for image crawler with trna URL."""
 
 import sys
 import logging
@@ -46,18 +46,18 @@ def test_url_connectivity(url: str, timeout: int = 5) -> bool:
 
 
 def test_crawler():
-    """Test image crawler with TMA URL."""
+    """Test image crawler with trna URL."""
     logger.info("╔" + "═" * 68 + "╗")
     logger.info("║" + " " * 68 + "║")
     logger.info("║" + "  TESTING IMAGE CRAWLER".center(68) + "║")
-    logger.info("║" + "  TMA Intranet URL + WebP Format".center(68) + "║")
+    logger.info("║" + "  trna Intranet URL + WebP Format".center(68) + "║")
     logger.info("║" + " " * 68 + "║")
     logger.info("╚" + "═" * 68 + "╝")
     logger.info("")
 
     # Test parameters
     test_emp_id = "Test_154176_A"
-    test_url = "https://intranet.tma.com.vn/images/emp_images/big_new"
+    test_url = "https://intranet.trna.com.vn/images/emp_images/big_new"
     test_output = Path("./images/test/test_download")
     test_output.mkdir(parents=True, exist_ok=True)
 

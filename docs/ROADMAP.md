@@ -50,7 +50,7 @@ Strategic roadmap for Badge Generator project development and enhancements.
 
 **Features**:
 - Badge generation from employee images
-- Multi-threaded image downloading from TMA intranet
+- Multi-threaded image downloading from trna intranet
 - Face detection and validation
 - QR code generation
 - Configuration management (INI-based)

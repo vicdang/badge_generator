@@ -505,7 +505,7 @@ class ImageMaker(object):
          name = unicodedata.normalize('NFKD', self.user_name).encode('ascii',
                                                                      'ignore')
          img_info = "Fullname: %s,Position: %s, Badge_Id: %s, Company: %s" % (
-            name, self.user_pos, self.user_id, "https://www.tma.vn")
+            name, self.user_pos, self.user_id, "https://www.trna.vn")
          logger.info("info: {}".format(img_info))
          if self.arg.qr_text:
             self.qr_img = qrcode.make(self.arg.qr_text)

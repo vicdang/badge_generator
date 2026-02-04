@@ -396,7 +396,7 @@ class ImageMaker:
         name = unicodedata.normalize('NFKD', self.user_name).encode('ascii', 'ignore')
         img_info = (
             f"Fullname: {name}, Position: {self.user_pos}, "
-            f"Badge_Id: {self.user_id}, Company: https://www.tma.vn"
+            f"Badge_Id: {self.user_id}, Company: https://www.trna.vn"
         )
         LOGGER.info(f"QR Code info: {img_info}")
         
