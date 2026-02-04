@@ -308,13 +308,13 @@ ConnectionError: Failed to download image
 
 1. **Check internet connection**:
    ```bash
-   ping intranet.tma.com.vn
+   ping intranet.trna.com.vn
    ```
 
 2. **Verify base URL** in config:
    ```ini
    [crawler]
-   base_url = https://intranet.tma.com.vn/images/emp_images/big_new
+   base_url = https://intranet.trna.com.vn/images/emp_images/big_new
    ```
 
 3. **Check timeout** settings:
@@ -644,7 +644,7 @@ root.mainloop()
 
 3. **Check network speed**:
    ```bash
-   ping intranet.tma.com.vn
+   ping intranet.trna.com.vn
    ```
 
 4. **Download during off-peak hours**
@@ -718,7 +718,7 @@ python src/badge_gui.py
 ### Download Questions
 
 #### Q: Where does it download images from?
-**A**: TMA intranet by default (configurable)
+**A**: trna intranet by default (configurable)
 
 #### Q: Can I download from a different source?
 **A**: Yes! Update `base_url` in `config/config.ini`
